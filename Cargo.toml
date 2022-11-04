@@ -1,0 +1,11 @@
+[package]
+name = "secp256k1-math"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+secp256k1-sys = { version = "0.6.0", default-features = false, path = "./secp256k1-sys" }
+rand_core = "0.8"
+
