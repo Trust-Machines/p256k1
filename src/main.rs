@@ -1,7 +1,7 @@
 use core::convert::From;
 use core::cmp::PartialEq;
 use core::ops::{
-    Add,
+    Add, Mul, Neg, Sub
 };
 
 #[allow(non_snake_case)]
@@ -13,7 +13,7 @@ mod bindings;
 //mod scalar;
 
 use crate::bindings::{
-    secp256k1_scalar, secp256k1_scalar_add, secp256k1_scalar_set_int,
+    secp256k1_scalar, secp256k1_scalar_add, secp256k1_scalar_eq, secp256k1_scalar_mul, secp256k1_scalar_negate, secp256k1_scalar_set_int,
 };
 
 #[derive(Debug)]
@@ -39,7 +39,9 @@ impl Scalar {
 
 impl PartialEq for Scalar {
     fn eq(&self, other: &Self) -> bool {
-        self.scalar.d == other.scalar.d
+        unsafe {
+            secp256k1_scalar_eq(&self.scalar, &other.scalar) != 0
+        }
     }
 }
 
@@ -68,14 +70,48 @@ impl Add for Scalar {
     }
 }
 
+impl Mul for Scalar {
+    type Output = Self;
+
+    fn mul(self, other: Self) -> Self {
+        let mut r = Scalar::new();
+
+        unsafe {
+            secp256k1_scalar_mul(&mut r.scalar, &self.scalar, &other.scalar);
+        }
+
+        r
+    }
+}
+
+impl Neg for Scalar {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        let mut r = Scalar::new();
+
+        unsafe {
+            secp256k1_scalar_negate(&mut r.scalar, &self.scalar);
+        }
+
+        r
+    }
+}
+
+impl Sub for Scalar {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        self + (-other)
+    }
+}
+
 //use crate::scalar::Scalar;
 
 fn main() {
-    let scalar32 = Scalar::from(32);
-    let scalar10 = Scalar::from(10);
-    let scalar42 = scalar32 + scalar10;
-
-    assert_eq!(scalar42, Scalar::from(42));
+    assert_eq!(Scalar::from(32) + Scalar::from(10), Scalar::from(42));
+    assert_eq!(Scalar::from(32) * Scalar::from(10), Scalar::from(320));
+    assert_eq!(Scalar::from(52) - Scalar::from(10), Scalar::from(42));
     
     println!("Hello, world!");
 }
