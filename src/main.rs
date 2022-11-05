@@ -5,11 +5,17 @@
 #[allow(non_upper_case_globals)]
 mod bindings;
 
-use crate::bindings::secp256k1_scalar_one;
+use crate::bindings::{
+    secp256k1_scalar, secp256k1_scalar_set_int,
+};
 
 fn main() {
     unsafe {
-        let scalar = secp256k1_scalar_one;
+        let mut scalar = secp256k1_scalar{
+            d: [0, 0, 0, 0],
+        };
+
+        secp256k1_scalar_set_int(&mut scalar, 0);
     }
     println!("Hello, world!");
 }
