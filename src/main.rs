@@ -1,13 +1,4 @@
-#[allow(non_snake_case)]
-#[allow(non_camel_case_types)]
-#[allow(unused_variables)]
-#[allow(dead_code)]
-#[allow(non_upper_case_globals)]
-mod bindings;
-mod scalar;
-mod point;
-
-use crate::{
+use secp256k1_math::{
     scalar::Scalar,
     point::Point,
 };

@@ -16,6 +16,11 @@ cc = "1.0.28"
 [dev-dependencies]
 libc = "0.2"
 
-#[lib]
-#path = "src/lib.rs"    # The source file of the target.
-#crate-type = ["lib"]   # The crate types to generate.
+[lib]
+path = "src/lib.rs"    # The source file of the target.
+crate-type = ["lib"]   # The crate types to generate.
+
+[[bin]]
+name = "main"
+path = "src/main.rs"
+links = "secp256k1"
