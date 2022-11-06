@@ -1,8 +1,13 @@
-use core::{mem, slice};
-use core::convert::From;
-use core::cmp::PartialEq;
-use core::ops::{
-    Add, Mul, Neg, Sub
+use core::{
+    convert::From,
+    cmp::PartialEq,
+    fmt::{
+        Debug, Display, Formatter, Result,
+    },
+    ops::{
+        Add, Mul, Neg, Sub,
+    },
+    mem, slice
 };
 
 #[allow(non_snake_case)]
@@ -78,10 +83,38 @@ impl Add for Scalar {
     }
 }
 
+impl Add<&Scalar> for &Scalar {
+    type Output = Scalar;
+
+    fn add(self, other: &Scalar) -> Scalar {
+        let mut r = Scalar::new();
+
+        unsafe {
+            secp256k1_scalar_add(&mut r.scalar, &self.scalar, &other.scalar);
+        }
+
+        r
+    }
+}
+
 impl Mul for Scalar {
     type Output = Self;
 
     fn mul(self, other: Self) -> Self {
+        let mut r = Scalar::new();
+
+        unsafe {
+            secp256k1_scalar_mul(&mut r.scalar, &self.scalar, &other.scalar);
+        }
+
+        r
+    }
+}
+
+impl Mul<&Scalar> for &Scalar {
+    type Output = Scalar;
+
+    fn mul(self, other: &Scalar) -> Scalar {
         let mut r = Scalar::new();
 
         unsafe {
@@ -122,11 +155,33 @@ impl Neg for Scalar {
     }
 }
 
+impl Neg for &Scalar {
+    type Output = Scalar;
+
+    fn neg(self) -> Self::Output {
+        let mut r = Scalar::new();
+
+        unsafe {
+            secp256k1_scalar_negate(&mut r.scalar, &self.scalar);
+        }
+
+        r
+    }
+}
+
 impl Sub for Scalar {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self {
         self + (-other)
+    }
+}
+
+impl Sub<&Scalar> for &Scalar {
+    type Output = Scalar;
+
+    fn sub(self, other: &Scalar) -> Scalar {
+        self + &(-other)
     }
 }
 
@@ -160,13 +215,22 @@ impl Point {
     }
 }
 
-/*
-impl PartialEq for Point {
-    fn eq(&self, other: &Self) -> bool {
-        self - other == Point::new()
+impl Debug for Point {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        f.debug_struct("Point")
+         .field("x", &self.gej.x)
+         .field("y", &self.gej.y)
+         .finish()
     }
 }
-*/
+
+impl PartialEq for Point {
+    fn eq(&self, other: &Self) -> bool {
+        let p = self - other;
+
+        p.gej.infinity == 1
+    }
+}
 
 impl From<Scalar> for Point {
     fn from(x: Scalar) -> Self {
@@ -201,11 +265,10 @@ impl Add for Point {
     }
 }
 
-/*
 impl Add<&Point> for &Point {
-    type Output = Self;
+    type Output = Point;
 
-    fn add(&self, other: &Self) -> Self {
+    fn add(self, other: &Point) -> Point {
         let mut r = Point::new();
 
         unsafe {
@@ -216,7 +279,6 @@ impl Add<&Point> for &Point {
         r
     }
 }
-*/
 
 impl Mul<Scalar> for Point {
     type Output = Self;
@@ -248,11 +310,33 @@ impl Neg for Point {
     }
 }
 
+impl Neg for &Point {
+    type Output = Point;
+
+    fn neg(self) -> Self::Output {
+        let mut r = Point::new();
+
+        unsafe {
+            secp256k1_gej_neg(&mut r.gej, &self.gej);
+        }
+
+        r
+    }
+}
+
 impl Sub for Point {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self {
         self + (-other)
+    }
+}
+
+impl Sub<&Point> for &Point {
+    type Output = Point;
+
+    fn sub(self, other: &Point) -> Point {
+        self + &(-other)
     }
 }
 
@@ -271,5 +355,7 @@ fn main() {
 
     println!("Scalar(42) bytes {:?}", Scalar::from(42).as_bytes());
 
-    //assert_eq!(G + Point::new(), G);
+    println!("G {:?}", G);
+    
+    assert_eq!(&G + &Point::new(), G);
 }
