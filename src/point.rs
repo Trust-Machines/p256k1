@@ -50,7 +50,7 @@ impl Point {
         Point::from(Scalar::from(1))
     }
 
-    pub fn compress(&mut self) -> CompressedPoint {
+    pub fn compress(&mut self) -> Compressed {
         unsafe {
             let mut ge = secp256k1_ge{
                 x: secp256k1_fe {
@@ -66,7 +66,7 @@ impl Point {
 	        secp256k1_fe_normalize_var(&mut ge.x);
             secp256k1_fe_normalize_var(&mut ge.y);
 
-            let mut c = CompressedPoint {
+            let mut c = Compressed {
                 data: [0; 33],
             };
             
@@ -135,8 +135,8 @@ impl From<&Scalar> for Point {
     }
 }
 
-impl From<CompressedPoint> for Point {
-    fn from(c: CompressedPoint) -> Self {
+impl From<Compressed> for Point {
+    fn from(c: Compressed) -> Self {
         unsafe {
             let mut y = secp256k1_ge{
                 x: secp256k1_fe {
@@ -270,11 +270,11 @@ impl Sub<&Point> for &Point {
     }
 }
 
-pub struct CompressedPoint {
+pub struct Compressed {
     data: [u8; 33],
 }
 
-impl CompressedPoint {
+impl Compressed {
     pub fn as_bytes(&self) -> &[u8] {
         let up: *const u8 = self.data.as_ptr();
         let bs: &[u8] = unsafe { slice::from_raw_parts(up, mem::size_of::<u8>() * 33) };
@@ -284,7 +284,7 @@ impl CompressedPoint {
     }
 }
 
-impl From<[u8; 33]> for CompressedPoint {
+impl From<[u8; 33]> for Compressed {
     fn from(bytes: [u8; 33]) -> Self {
         Self {
             data: bytes,
