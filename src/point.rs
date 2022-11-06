@@ -10,12 +10,8 @@ use core::{
     mem, slice
 };
 
-#[allow(non_camel_case_types)]
-#[allow(unused_variables)]
-#[allow(dead_code)]
-
 use crate::bindings::{
-    SECP256K1_CONTEXT_SIGN, SECP256K1_TAG_PUBKEY_ODD, SECP256K1_TAG_PUBKEY_EVEN, secp256k1_context, secp256k1_fe, secp256k1_ge, secp256k1_gej, secp256k1_ecmult, secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_context_create, secp256k1_ge_set_gej, secp256k1_fe_normalize_var, secp256k1_fe_is_odd, secp256k1_fe_get_b32,
+    SECP256K1_CONTEXT_SIGN, SECP256K1_TAG_PUBKEY_ODD, SECP256K1_TAG_PUBKEY_EVEN, secp256k1_context, secp256k1_fe, secp256k1_ge, secp256k1_gej, secp256k1_ecmult, secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_context_create, secp256k1_ge_set_gej, secp256k1_ge_set_xo_var, secp256k1_gej_set_ge, secp256k1_fe_normalize_var, secp256k1_fe_is_odd, secp256k1_fe_get_b32, secp256k1_fe_set_b32,
 };
 
 use crate::scalar::Scalar;
@@ -139,6 +135,35 @@ impl From<&Scalar> for Point {
     }
 }
 
+impl From<CompressedPoint> for Point {
+    fn from(c: CompressedPoint) -> Self {
+        unsafe {
+            let mut y = secp256k1_ge{
+                x: secp256k1_fe {
+                    n: [0; 5],
+                },
+                y: secp256k1_fe {
+                    n: [0; 5],
+                },
+                infinity: 1,
+            };
+            
+            let mut x = secp256k1_fe {
+                n: [0; 5],
+            };
+
+            let _rx = secp256k1_fe_set_b32(&mut x, &c.data[1]);
+            let _ry = secp256k1_ge_set_xo_var(&mut y, &x, (c.data[0] as u32 == SECP256K1_TAG_PUBKEY_ODD).try_into().unwrap());
+
+            let mut r = Point::new();
+            
+            secp256k1_gej_set_ge(&mut r.gej, &y);
+
+            r
+        }
+    }
+}
+
 impl Add for Point {
     type Output = Self;
 
@@ -256,5 +281,13 @@ impl CompressedPoint {
 
         bs
 
+    }
+}
+
+impl From<[u8; 33]> for CompressedPoint {
+    fn from(bytes: [u8; 33]) -> Self {
+        Self {
+            data: bytes,
+        }
     }
 }
