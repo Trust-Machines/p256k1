@@ -1,3 +1,4 @@
+use core::{mem, slice};
 use core::convert::From;
 use core::cmp::PartialEq;
 use core::ops::{
@@ -34,6 +35,14 @@ impl Scalar {
         unsafe {
             secp256k1_scalar_set_int(&mut self.scalar, i);
         }
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        let up: *const u64 = self.scalar.d.as_ptr();
+        let bp: *const u8 = up as *const u8;
+        let bs: &[u8] = unsafe { slice::from_raw_parts(bp, mem::size_of::<u64>() * 4) };
+
+        bs
     }
 }
 
@@ -112,6 +121,7 @@ fn main() {
     assert_eq!(Scalar::from(32) + Scalar::from(10), Scalar::from(42));
     assert_eq!(Scalar::from(32) * Scalar::from(10), Scalar::from(320));
     assert_eq!(Scalar::from(52) - Scalar::from(10), Scalar::from(42));
-    
-    println!("Hello, world!");
+
+    println!("Scalar(42) bytes {:?}", Scalar::from(42).as_bytes());
+
 }
