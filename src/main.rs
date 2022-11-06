@@ -14,7 +14,7 @@ mod bindings;
 //mod scalar;
 
 use crate::bindings::{
-    SECP256K1_CONTEXT_SIGN, secp256k1_context, secp256k1_fe, secp256k1_ge, secp256k1_gej, secp256k1_ecmult, secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_scalar, secp256k1_context_create, secp256k1_scalar_add, secp256k1_scalar_eq, secp256k1_scalar_mul, secp256k1_scalar_negate, secp256k1_scalar_set_int,
+    SECP256K1_CONTEXT_SIGN, secp256k1_context, secp256k1_fe, /*secp256k1_ge,*/ secp256k1_gej, secp256k1_ecmult, secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_scalar, secp256k1_context_create, secp256k1_scalar_add, secp256k1_scalar_eq, secp256k1_scalar_mul, secp256k1_scalar_negate, secp256k1_scalar_set_int,
 };
 
 #[derive(Debug)]
@@ -86,6 +86,22 @@ impl Mul for Scalar {
 
         unsafe {
             secp256k1_scalar_mul(&mut r.scalar, &self.scalar, &other.scalar);
+        }
+
+        r
+    }
+}
+
+impl Mul<Point> for Scalar {
+    type Output = Point;
+
+    fn mul(self, p: Point) -> Self::Output {
+        let mut r = Point::new();
+        let zero = Scalar::from(0);
+
+        unsafe {
+            //secp256k1_ecmult_gen(&ctx()->ecmult_gen_ctx, &m_data.obj, &r.m_data.obj);
+            secp256k1_ecmult(&mut r.gej, &p.gej, &self.scalar, &zero.scalar);
         }
 
         r
@@ -254,4 +270,6 @@ fn main() {
     assert_eq!(Scalar::from(52) - Scalar::from(10), Scalar::from(42));
 
     println!("Scalar(42) bytes {:?}", Scalar::from(42).as_bytes());
+
+    //assert_eq!(G + Point::new(), G);
 }
