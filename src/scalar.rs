@@ -17,7 +17,7 @@ use core::{
 };
 
 use crate::bindings::{
-    secp256k1_scalar, secp256k1_ecmult, secp256k1_scalar_add, secp256k1_scalar_eq, secp256k1_scalar_mul, secp256k1_scalar_negate, secp256k1_scalar_set_int,
+    secp256k1_scalar, secp256k1_ecmult, secp256k1_scalar_add, secp256k1_scalar_eq, secp256k1_scalar_mul, secp256k1_scalar_negate, secp256k1_scalar_set_int, secp256k1_scalar_set_b32,
 };
 
 use crate::point::Point;
@@ -70,6 +70,20 @@ impl From<u32> for Scalar {
         let mut s = Scalar::new();
 
         s.set_int(i);
+        
+        s
+    }
+}
+
+impl From<[u8; 32]> for Scalar {
+    fn from(bytes: [u8; 32]) -> Self {
+        let mut s = Scalar::new();
+        let null = 0 as *mut ::std::os::raw::c_int;
+        let p: *const u8 = bytes.as_ptr();
+
+        unsafe {
+            secp256k1_scalar_set_b32(&mut s.scalar, p, null);
+        }
         
         s
     }
@@ -139,7 +153,21 @@ impl Mul<Point> for Scalar {
         let zero = Scalar::from(0);
 
         unsafe {
-            //secp256k1_ecmult_gen(&ctx()->ecmult_gen_ctx, &m_data.obj, &r.m_data.obj);
+            secp256k1_ecmult(&mut r.gej, &p.gej, &self.scalar, &zero.scalar);
+        }
+
+        r
+    }
+}
+
+impl Mul<&Point> for &Scalar {
+    type Output = Point;
+
+    fn mul(self, p: &Point) -> Self::Output {
+        let mut r = Point::new();
+        let zero = Scalar::from(0);
+
+        unsafe {
             secp256k1_ecmult(&mut r.gej, &p.gej, &self.scalar, &zero.scalar);
         }
 

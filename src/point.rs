@@ -7,15 +7,15 @@ use core::{
     ops::{
         Add, Mul, Neg, Sub,
     },
+    mem, slice
 };
 
-#[allow(non_snake_case)]
 #[allow(non_camel_case_types)]
 #[allow(unused_variables)]
 #[allow(dead_code)]
 
 use crate::bindings::{
-    SECP256K1_CONTEXT_SIGN, secp256k1_context, secp256k1_fe, /*secp256k1_ge,*/ secp256k1_gej, secp256k1_ecmult, secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_context_create, 
+    SECP256K1_CONTEXT_SIGN, SECP256K1_TAG_PUBKEY_ODD, SECP256K1_TAG_PUBKEY_EVEN, secp256k1_context, secp256k1_fe, secp256k1_ge, secp256k1_gej, secp256k1_ecmult, secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_context_create, secp256k1_ge_set_gej, secp256k1_fe_normalize_var, secp256k1_fe_is_odd, secp256k1_fe_get_b32,
 };
 
 use crate::scalar::Scalar;
@@ -48,6 +48,43 @@ impl Point {
             secp256k1_context_create(SECP256K1_CONTEXT_SIGN)
         }
     }
+
+    #[allow(non_snake_case)]
+    pub fn G() -> Point {
+        Point::from(Scalar::from(1))
+    }
+
+    pub fn compress(&mut self) -> CompressedPoint {
+        unsafe {
+            let mut ge = secp256k1_ge{
+                x: secp256k1_fe {
+                    n: [0; 5],
+                },
+                y: secp256k1_fe {
+                    n: [0; 5],
+                },
+                infinity: 0,
+            };
+
+            secp256k1_ge_set_gej(&mut ge, &mut self.gej);
+	        secp256k1_fe_normalize_var(&mut ge.x);
+            secp256k1_fe_normalize_var(&mut ge.y);
+
+            let mut c = CompressedPoint {
+                data: [0; 33],
+            };
+            
+            c.data[0] = if secp256k1_fe_is_odd(&ge.y) == 1 {
+                SECP256K1_TAG_PUBKEY_ODD.try_into().unwrap()
+            } else {
+                SECP256K1_TAG_PUBKEY_EVEN.try_into().unwrap()
+            };
+            
+	        secp256k1_fe_get_b32(&mut c.data[1], &ge.x);
+
+            c
+        }
+    }
 }
 
 impl Debug for Point {
@@ -55,6 +92,7 @@ impl Debug for Point {
         f.debug_struct("Point")
          .field("x", &self.gej.x)
          .field("y", &self.gej.y)
+         .field("z", &self.gej.z)
          .finish()
     }
 }
@@ -76,14 +114,24 @@ impl PartialEq for Point {
 impl From<Scalar> for Point {
     fn from(x: Scalar) -> Self {
         let mut r = Point::new();
-        //let null_scalar = 0 as *const secp256k1_scalar;
-        //let null_gej = 0 as *const secp256k1_gej;
         let one = Scalar::from(1);
         let p = Point::new();
         
         unsafe {
-            //secp256k1_ecmult_gen(&ctx()->ecmult_gen_ctx, &m_data.obj, &r.m_data.obj);
-            //secp256k1_ecmult(&mut r.gej, null_gej, null_scalar, &one.scalar);
+            secp256k1_ecmult(&mut r.gej, &p.gej, &one.scalar, &x.scalar);
+        }
+
+        r
+    }
+}
+
+impl From<&Scalar> for Point {
+    fn from(x: &Scalar) -> Self {
+        let mut r = Point::new();
+        let one = Scalar::from(1);
+        let p = Point::new();
+        
+        unsafe {
             secp256k1_ecmult(&mut r.gej, &p.gej, &one.scalar, &x.scalar);
         }
 
@@ -137,6 +185,22 @@ impl Mul<Scalar> for Point {
     }
 }
 
+impl Mul<&Scalar> for &Point {
+    type Output = Point;
+
+    fn mul(self, x: &Scalar) -> Point {
+        let mut r = Point::new();
+        let zero = Scalar::from(0);
+
+        unsafe {
+            //secp256k1_ecmult_gen(&ctx()->ecmult_gen_ctx, &m_data.obj, &r.m_data.obj);
+            secp256k1_ecmult(&mut r.gej, &self.gej, &x.scalar, &zero.scalar);
+        }
+
+        r
+    }
+}
+
 impl Neg for Point {
     type Output = Self;
 
@@ -178,5 +242,19 @@ impl Sub<&Point> for &Point {
 
     fn sub(self, other: &Point) -> Point {
         self + &(-other)
+    }
+}
+
+pub struct CompressedPoint {
+    data: [u8; 33],
+}
+
+impl CompressedPoint {
+    pub fn as_bytes(&self) -> &[u8] {
+        let up: *const u8 = self.data.as_ptr();
+        let bs: &[u8] = unsafe { slice::from_raw_parts(up, mem::size_of::<u8>() * 33) };
+
+        bs
+
     }
 }
