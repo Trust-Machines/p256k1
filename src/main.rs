@@ -1,7 +1,9 @@
+use rand_core::{
+    CryptoRng, RngCore, OsRng,
+};
 use sha3::{
     Digest, Sha3_256, 
 };
-
 use secp256k1_math::{
     scalar::Scalar,
     point::Point,
@@ -25,10 +27,10 @@ struct SchnorrProof {
 
 impl SchnorrProof {
     #[allow(non_snake_case)]
-    pub fn new(x: &Scalar) -> Self {
+    pub fn new<T: RngCore + CryptoRng>(x: &Scalar, rng: &mut T) -> Self {
         let mut G = Point::G();
         let mut X = Point::from(x);
-        let v = Scalar::from(12345);
+        let v = Scalar::random(rng);
         let mut V = Point::from(&v);
         let mut hasher = Sha3_256::new();
 
@@ -63,7 +65,8 @@ impl SchnorrProof {
 
 #[allow(non_snake_case)]
 fn main() {
-    let x = Scalar::from(12345);
-    let mut proof = SchnorrProof::new(&x);
+    let mut rng = OsRng::default();
+    let x = Scalar::random(&mut rng);
+    let mut proof = SchnorrProof::new(&x, &mut rng);
     println!("SchnorrProof verify {}", proof.verify());
 }

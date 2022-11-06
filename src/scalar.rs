@@ -1,9 +1,3 @@
-#[allow(non_snake_case)]
-#[allow(non_camel_case_types)]
-#[allow(unused_variables)]
-#[allow(dead_code)]
-#[allow(non_upper_case_globals)]
-
 use core::{
     convert::From,
     cmp::PartialEq,
@@ -14,6 +8,10 @@ use core::{
         Add, Mul, Neg, Sub,
     },
     mem, slice
+};
+
+use rand_core::{
+    CryptoRng, RngCore,
 };
 
 use crate::bindings::{
@@ -34,6 +32,14 @@ impl Scalar {
                 d: [0; 4],
             }
         }
+    }
+
+    pub fn random<T: RngCore + CryptoRng>(rng: &mut T) -> Self {
+        let mut bytes: [u8; 32] = [0; 32];
+
+        rng.fill_bytes(&mut bytes);
+        
+        Scalar::from(bytes)
     }
     
     pub fn set_int(&mut self, i: u32) {
