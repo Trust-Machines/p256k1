@@ -39,7 +39,7 @@ impl SchnorrProof {
         hasher.update(V.compress().as_bytes());
 
         let c = hash_to_scalar(&mut hasher);
-        let r = &v - &(&c * x);
+        let r = v - &c * x;
         
         SchnorrProof{
             X: X,
