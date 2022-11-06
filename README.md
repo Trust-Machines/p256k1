@@ -5,7 +5,7 @@ Wrappers around secp256k1 to expose the underlying math, specifically unwrapped 
 Stable rust with a working cargo.  Also need llvm to build secp256k1 and the link the wrappers.
 
 ### Ubuntu
-# apt install llvm
+$ apt install llvm
 
 ### MacOS with brew
-brew install llvm
+$ brew install llvm
