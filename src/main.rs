@@ -14,7 +14,7 @@ mod bindings;
 //mod scalar;
 
 use crate::bindings::{
-    SECP256K1_CONTEXT_SIGN, secp256k1_context, secp256k1_fe, secp256k1_ge, secp256k1_gej, secp256k1_ecmult, secp256k1_gej_add_var, secp256k1_scalar, secp256k1_context_create, secp256k1_scalar_add, secp256k1_scalar_eq, secp256k1_scalar_mul, secp256k1_scalar_negate, secp256k1_scalar_set_int,
+    SECP256K1_CONTEXT_SIGN, secp256k1_context, secp256k1_fe, secp256k1_ge, secp256k1_gej, secp256k1_ecmult, secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_scalar, secp256k1_context_create, secp256k1_scalar_add, secp256k1_scalar_eq, secp256k1_scalar_mul, secp256k1_scalar_negate, secp256k1_scalar_set_int,
 };
 
 #[derive(Debug)]
@@ -53,7 +53,6 @@ impl PartialEq for Scalar {
         }
     }
 }
-
 
 impl From<u32> for Scalar {
     fn from(i: u32) -> Self {
@@ -148,9 +147,7 @@ impl Point {
 /*
 impl PartialEq for Point {
     fn eq(&self, other: &Self) -> bool {
-        unsafe {
-            secp256k1_scalar_eq(&self.scalar, &other.scalar) != 0
-        }
+        self - other == Point::new()
     }
 }
 */
@@ -188,6 +185,23 @@ impl Add for Point {
     }
 }
 
+/*
+impl Add<&Point> for &Point {
+    type Output = Self;
+
+    fn add(&self, other: &Self) -> Self {
+        let mut r = Point::new();
+
+        unsafe {
+            let null = 0 as *mut secp256k1_fe;
+            secp256k1_gej_add_var(&mut r.gej, &self.gej, &other.gej, null);
+        }
+
+        r
+    }
+}
+*/
+
 impl Mul<Scalar> for Point {
     type Output = Self;
 
@@ -203,7 +217,7 @@ impl Mul<Scalar> for Point {
         r
     }
 }
-/*
+
 impl Neg for Point {
     type Output = Self;
 
@@ -211,7 +225,7 @@ impl Neg for Point {
         let mut r = Point::new();
 
         unsafe {
-            secp256k1_gej_negate(&mut r.gej, &self.gej);
+            secp256k1_gej_neg(&mut r.gej, &self.gej);
         }
 
         r
@@ -225,7 +239,7 @@ impl Sub for Point {
         self + (-other)
     }
 }
-*/
+
 //use crate::gej::Scalar;
 
 #[allow(non_snake_case)]
