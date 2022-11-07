@@ -69,7 +69,7 @@ impl Scalar {
 
 impl Display for Scalar {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        write!(f, "{:?}", self.as_bytes())
+        write!(f, "{}", hex::encode(self.as_bytes()))
     }
 }
 

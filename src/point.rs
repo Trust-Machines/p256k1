@@ -107,7 +107,8 @@ impl Debug for Point {
 
 impl Display for Point {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        write!(f, "({:?}, {:?})", self.gej.x, self.gej.y)
+        let c = self.clone().compress();
+        write!(f, "{}", hex::encode(c.data))
     }
 }
 
