@@ -9,6 +9,7 @@ use core::{
     },
     mem, slice
 };
+use::num_traits::Zero;
 
 use crate::bindings::{
     SECP256K1_CONTEXT_SIGN, SECP256K1_TAG_PUBKEY_ODD, SECP256K1_TAG_PUBKEY_EVEN, secp256k1_context, secp256k1_fe, secp256k1_ge, secp256k1_gej, secp256k1_ecmult, secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_context_create, secp256k1_ge_set_gej, secp256k1_ge_set_xo_var, secp256k1_gej_set_ge, secp256k1_fe_normalize_var, secp256k1_fe_is_odd, secp256k1_fe_get_b32, secp256k1_fe_set_b32,
@@ -23,6 +24,10 @@ pub struct Point {
 #[allow(dead_code)]
 impl Point {
     pub fn new() -> Self {
+        Self::identity()
+    }
+
+    pub fn identity() -> Self {
         Self {
             gej: secp256k1_gej {
                 x: secp256k1_fe {
@@ -268,6 +273,15 @@ impl Sub<&Point> for &Point {
     fn sub(self, other: &Point) -> Point {
         self + &(-other)
     }
+}
+
+impl Zero for Point {
+     fn zero() -> Self {
+ 	     Point::identity()
+     }
+     fn is_zero(&self) -> bool {
+ 	     self == &Point::identity()
+     }
 }
 
 pub struct Compressed {

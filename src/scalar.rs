@@ -9,7 +9,7 @@ use core::{
     },
     mem, slice
 };
-
+use::num_traits::{Zero, One};
 use rand_core::{
     CryptoRng, RngCore,
 };
@@ -225,3 +225,20 @@ impl Sub<&Scalar> for &Scalar {
     }
 }
 
+impl Zero for Scalar {
+    fn zero() -> Self {
+ 	    Scalar::from(0)
+    }
+    fn is_zero(&self) -> bool {
+ 	    self == &Scalar::zero()
+    }
+}
+
+impl One for Scalar {
+    fn one() -> Self {
+ 	    Scalar::from(1)
+    }
+    fn is_one(&self) -> bool {
+ 	    self == &Scalar::one()
+    }
+}

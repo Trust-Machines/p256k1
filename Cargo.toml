@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 rand_core = { version = "0.5", features = ["getrandom"] }
 sha3 = "0.10"
+num-traits = "0.2"
 hex = "0.4"
 
 [build-dependencies]
