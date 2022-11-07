@@ -5,7 +5,7 @@ use core::{
         Debug, Display, Formatter, Result,
     },
     ops::{
-        Add, AddAssign, Mul, Neg, Sub,
+        Add, AddAssign, Mul, MulAssign, Neg, Sub, Div, DivAssign,
     },
     mem, slice
 };
@@ -15,7 +15,7 @@ use rand_core::{
 };
 
 use crate::bindings::{
-    secp256k1_scalar, secp256k1_ecmult, secp256k1_scalar_add, secp256k1_scalar_eq, secp256k1_scalar_mul, secp256k1_scalar_negate, secp256k1_scalar_set_int, secp256k1_scalar_set_b32,
+    secp256k1_scalar, secp256k1_ecmult, secp256k1_scalar_add, secp256k1_scalar_eq, secp256k1_scalar_mul, secp256k1_scalar_negate, secp256k1_scalar_set_int, secp256k1_scalar_set_b32, secp256k1_scalar_inverse,
 };
 
 use crate::point::Point;
@@ -48,6 +48,16 @@ impl Scalar {
         }
     }
 
+    pub fn invert(&self) -> Scalar {
+        let mut r = Scalar::new();
+
+        unsafe {
+            secp256k1_scalar_inverse(&mut r.scalar, &self.scalar);
+        }
+        
+        r
+    }
+    
     pub fn as_bytes(&self) -> &[u8] {
         let up: *const u64 = self.scalar.d.as_ptr();
         let bp: *const u8 = up as *const u8;
@@ -223,6 +233,22 @@ impl Mul<&Scalar> for Scalar {
     }
 }
 
+impl MulAssign for Scalar {
+    fn mul_assign(&mut self, rhs: Scalar) {
+        unsafe {
+            secp256k1_scalar_mul(&mut self.scalar, &self.scalar, &rhs.scalar);
+        }
+    }
+}
+
+impl MulAssign<&Scalar> for Scalar {
+    fn mul_assign(&mut self, rhs: &Scalar) {
+        unsafe {
+            secp256k1_scalar_mul(&mut self.scalar, &self.scalar, &rhs.scalar);
+        }
+    }
+}
+
 impl Mul<Point> for Scalar {
     type Output = Point;
 
@@ -280,6 +306,52 @@ impl Mul<&Point> for Scalar {
         }
 
         r
+    }
+}
+
+impl Div<Scalar> for Scalar {
+    type Output = Scalar;
+    fn div(self, q: Scalar) -> Self::Output {
+ 	    let q1 = q.invert();
+ 	    self * q1
+    }
+}
+
+impl Div<&Scalar> for &Scalar {
+    type Output = Scalar;
+    fn div(self, q: &Scalar) -> Self::Output {
+ 	    let q1 = q.invert();
+ 	    self * q1
+    }
+}
+
+impl Div<Scalar> for &Scalar {
+    type Output = Scalar;
+    fn div(self, q: Scalar) -> Self::Output {
+ 	    let q1 = q.invert();
+ 	    self * q1
+    }
+}
+
+impl Div<&Scalar> for Scalar {
+    type Output = Scalar;
+    fn div(self, q: &Scalar) -> Self::Output {
+ 	    let q1 = q.invert();
+ 	    self * q1
+    }
+}
+
+impl DivAssign<Scalar> for Scalar {
+    fn div_assign(&mut self, q: Scalar) {
+ 	    let q1 = q.invert();
+ 	    *self = self.clone() * q1;
+    }
+}
+
+impl DivAssign<&Scalar> for Scalar {
+    fn div_assign(&mut self, q: &Scalar) {
+ 	    let q1 = q.invert();
+ 	    *self = self.clone() * q1;
     }
 }
 

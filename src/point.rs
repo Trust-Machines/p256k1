@@ -89,6 +89,12 @@ impl Point {
     }
 }
 
+impl Default for Point {
+    fn default() -> Self {
+        Point::identity()
+    }
+}
+
 impl Debug for Point {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         f.debug_struct("Point")
