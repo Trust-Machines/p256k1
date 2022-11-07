@@ -5,7 +5,7 @@ use core::{
         Debug, Display, Formatter, Result,
     },
     ops::{
-        Add, Mul, Neg, Sub,
+        Add, AddAssign, Mul, Neg, Sub,
     },
     mem, slice
 };
@@ -123,6 +123,50 @@ impl Add<&Scalar> for &Scalar {
     }
 }
 
+impl Add<&Scalar> for Scalar {
+    type Output = Scalar;
+
+    fn add(self, other: &Scalar) -> Scalar {
+        let mut r = Scalar::new();
+
+        unsafe {
+            secp256k1_scalar_add(&mut r.scalar, &self.scalar, &other.scalar);
+        }
+
+        r
+    }
+}
+
+impl Add<Scalar> for &Scalar {
+    type Output = Scalar;
+
+    fn add(self, other: Scalar) -> Scalar {
+        let mut r = Scalar::new();
+
+        unsafe {
+            secp256k1_scalar_add(&mut r.scalar, &self.scalar, &other.scalar);
+        }
+
+        r
+    }
+}
+
+impl AddAssign for Scalar {
+    fn add_assign(&mut self, rhs: Scalar) {
+        unsafe {
+            secp256k1_scalar_add(&mut self.scalar, &self.scalar, &rhs.scalar);
+        }
+    }
+}
+
+impl AddAssign<&Scalar> for Scalar {
+    fn add_assign(&mut self, rhs: &Scalar) {
+        unsafe {
+            secp256k1_scalar_add(&mut self.scalar, &self.scalar, &rhs.scalar);
+        }
+    }
+}
+
 impl Mul for Scalar {
     type Output = Self;
 
@@ -138,6 +182,34 @@ impl Mul for Scalar {
 }
 
 impl Mul<&Scalar> for &Scalar {
+    type Output = Scalar;
+
+    fn mul(self, other: &Scalar) -> Scalar {
+        let mut r = Scalar::new();
+
+        unsafe {
+            secp256k1_scalar_mul(&mut r.scalar, &self.scalar, &other.scalar);
+        }
+
+        r
+    }
+}
+
+impl Mul<Scalar> for &Scalar {
+    type Output = Scalar;
+
+    fn mul(self, other: Scalar) -> Scalar {
+        let mut r = Scalar::new();
+
+        unsafe {
+            secp256k1_scalar_mul(&mut r.scalar, &self.scalar, &other.scalar);
+        }
+
+        r
+    }
+}
+
+impl Mul<&Scalar> for Scalar {
     type Output = Scalar;
 
     fn mul(self, other: &Scalar) -> Scalar {
@@ -167,6 +239,36 @@ impl Mul<Point> for Scalar {
 }
 
 impl Mul<&Point> for &Scalar {
+    type Output = Point;
+
+    fn mul(self, p: &Point) -> Self::Output {
+        let mut r = Point::new();
+        let zero = Scalar::from(0);
+
+        unsafe {
+            secp256k1_ecmult(&mut r.gej, &p.gej, &self.scalar, &zero.scalar);
+        }
+
+        r
+    }
+}
+
+impl Mul<Point> for &Scalar {
+    type Output = Point;
+
+    fn mul(self, p: Point) -> Self::Output {
+        let mut r = Point::new();
+        let zero = Scalar::from(0);
+
+        unsafe {
+            secp256k1_ecmult(&mut r.gej, &p.gej, &self.scalar, &zero.scalar);
+        }
+
+        r
+    }
+}
+
+impl Mul<&Point> for Scalar {
     type Output = Point;
 
     fn mul(self, p: &Point) -> Self::Output {

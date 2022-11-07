@@ -5,7 +5,7 @@ use core::{
         Debug, Display, Formatter, Result,
     },
     ops::{
-        Add, Mul, Neg, Sub,
+        Add, AddAssign, Mul, Neg, Sub,
     },
     mem, slice
 };
@@ -197,6 +197,54 @@ impl Add<&Point> for &Point {
         }
 
         r
+    }
+}
+
+impl Add<Point> for &Point {
+    type Output = Point;
+
+    fn add(self, other: Point) -> Point {
+        let mut r = Point::new();
+
+        unsafe {
+            let null = 0 as *mut secp256k1_fe;
+            secp256k1_gej_add_var(&mut r.gej, &self.gej, &other.gej, null);
+        }
+
+        r
+    }
+}
+
+impl Add<&Point> for Point {
+    type Output = Point;
+
+    fn add(self, other: &Point) -> Point {
+        let mut r = Point::new();
+
+        unsafe {
+            let null = 0 as *mut secp256k1_fe;
+            secp256k1_gej_add_var(&mut r.gej, &self.gej, &other.gej, null);
+        }
+
+        r
+    }
+}
+
+impl AddAssign<Point> for Point {
+    fn add_assign(&mut self, other: Point) {
+        unsafe {
+            let null = 0 as *mut secp256k1_fe;
+            secp256k1_gej_add_var(&mut self.gej, &self.gej, &other.gej, null);
+        }
+    }
+}
+
+impl AddAssign<&Point> for Point {
+    fn add_assign(&mut self, other: &Point) {
+        unsafe {
+            let null = 0 as *mut secp256k1_fe;
+            secp256k1_gej_add_var(&mut self.gej, &self.gej, &other.gej, null);
+        }
     }
 }
 
