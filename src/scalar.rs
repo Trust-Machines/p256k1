@@ -20,7 +20,7 @@ use crate::bindings::{
 
 use crate::point::Point;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Scalar {
     pub scalar: secp256k1_scalar,
 }

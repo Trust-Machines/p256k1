@@ -17,6 +17,7 @@ use crate::bindings::{
 
 use crate::scalar::Scalar;
 
+#[derive(Clone)]
 pub struct Point {
     pub gej: secp256k1_gej,
 }
