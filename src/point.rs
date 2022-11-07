@@ -17,7 +17,16 @@ use crate::bindings::{
 
 use crate::scalar::Scalar;
 
-#[derive(Clone)]
+pub const G: Point = Point {
+    gej: secp256k1_gej {
+        x: secp256k1_fe { n: [705178180786072, 3855836460717471, 4089131105950716, 3301581525494108, 133858670344668] },
+        y: secp256k1_fe { n: [2199641648059576, 1278080618437060, 3959378566518708, 3455034269351872, 79417610544803] },
+        z: secp256k1_fe { n: [1, 0, 0, 0, 0], },
+        infinity: 0,
+    },
+};
+
+#[derive(Copy, Clone)]
 pub struct Point {
     pub gej: secp256k1_gej,
 }
@@ -56,7 +65,7 @@ impl Point {
         Point::from(Scalar::from(1))
     }
 
-    pub fn compress(&mut self) -> Compressed {
+    pub fn compress(&self) -> Compressed {
         unsafe {
             let mut ge = secp256k1_ge{
                 x: secp256k1_fe {
@@ -68,7 +77,7 @@ impl Point {
                 infinity: 0,
             };
 
-            secp256k1_ge_set_gej(&mut ge, &mut self.gej);
+            secp256k1_ge_set_gej(&mut ge, &self.gej);
 	        secp256k1_fe_normalize_var(&mut ge.x);
             secp256k1_fe_normalize_var(&mut ge.y);
 
