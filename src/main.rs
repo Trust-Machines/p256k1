@@ -50,7 +50,7 @@ impl SchnorrProof {
     }
 
     #[allow(non_snake_case)]
-    pub fn verify(&mut self) -> bool {
+    pub fn verify(&self) -> bool {
         let mut hasher = Sha3_256::new();
 
         hasher.update(G.compress().as_bytes());
@@ -67,7 +67,7 @@ impl SchnorrProof {
 fn main() {
     let mut rng = OsRng::default();
     let x = Scalar::random(&mut rng);
-    let mut proof = SchnorrProof::new(&x, &mut rng);
+    let proof = SchnorrProof::new(&x, &mut rng);
     println!("SchnorrProof verify {}", proof.verify());
-    println!("G {:?}", G);
+    //println!("G {:?}", G);
 }
