@@ -360,3 +360,14 @@ impl From<[u8; 33]> for Compressed {
         }
     }
 }
+
+impl From<&[u8]> for Compressed {
+    fn from(bytes: &[u8]) -> Self {
+        let mut r = Compressed {
+            data: [0; 33],
+        };
+
+        r.data.clone_from_slice(bytes);
+        r
+    }
+}
