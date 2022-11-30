@@ -1,21 +1,19 @@
+use ::num_traits::{One, Zero};
 use core::{
+    cmp::{Eq, PartialEq},
     convert::From,
-    cmp::PartialEq,
-    fmt::{
-        Debug, Display, Formatter, Result,
-    },
-    ops::{
-        Add, AddAssign, Mul, MulAssign, Neg, Sub, Div, DivAssign,
-    },
-    mem, slice
+    fmt::{Debug, Display, Formatter, Result},
+    hash::{Hash, Hasher},
+    mem,
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub},
+    slice,
 };
-use::num_traits::{Zero, One};
-use rand_core::{
-    CryptoRng, RngCore,
-};
+use rand_core::{CryptoRng, RngCore};
 
 use crate::bindings::{
-    secp256k1_scalar, secp256k1_ecmult, secp256k1_scalar_add, secp256k1_scalar_eq, secp256k1_scalar_mul, secp256k1_scalar_negate, secp256k1_scalar_set_int, secp256k1_scalar_set_b32, secp256k1_scalar_inverse,
+    secp256k1_ecmult, secp256k1_scalar, secp256k1_scalar_add, secp256k1_scalar_eq,
+    secp256k1_scalar_inverse, secp256k1_scalar_mul, secp256k1_scalar_negate,
+    secp256k1_scalar_set_b32, secp256k1_scalar_set_int,
 };
 
 use crate::point::Point;
@@ -28,9 +26,7 @@ pub struct Scalar {
 impl Scalar {
     pub fn new() -> Self {
         Self {
-            scalar: secp256k1_scalar {
-                d: [0; 4],
-            }
+            scalar: secp256k1_scalar { d: [0; 4] },
         }
     }
 
@@ -38,10 +34,10 @@ impl Scalar {
         let mut bytes: [u8; 32] = [0; 32];
 
         rng.fill_bytes(&mut bytes);
-        
+
         Scalar::from(bytes)
     }
-    
+
     pub fn set_int(&mut self, i: u32) {
         unsafe {
             secp256k1_scalar_set_int(&mut self.scalar, i);
@@ -54,10 +50,10 @@ impl Scalar {
         unsafe {
             secp256k1_scalar_inverse(&mut r.scalar, &self.scalar);
         }
-        
+
         r
     }
-    
+
     pub fn as_bytes(&self) -> &[u8] {
         let up: *const u64 = self.scalar.d.as_ptr();
         let bp: *const u8 = up as *const u8;
@@ -75,9 +71,15 @@ impl Display for Scalar {
 
 impl PartialEq for Scalar {
     fn eq(&self, other: &Self) -> bool {
-        unsafe {
-            secp256k1_scalar_eq(&self.scalar, &other.scalar) != 0
-        }
+        unsafe { secp256k1_scalar_eq(&self.scalar, &other.scalar) != 0 }
+    }
+}
+
+impl Eq for Scalar {}
+
+impl Hash for Scalar {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        state.write(self.as_bytes());
     }
 }
 
@@ -86,7 +88,7 @@ impl From<u32> for Scalar {
         let mut s = Scalar::new();
 
         s.set_int(i);
-        
+
         s
     }
 }
@@ -100,7 +102,7 @@ impl From<[u8; 32]> for Scalar {
         unsafe {
             secp256k1_scalar_set_b32(&mut s.scalar, p, null);
         }
-        
+
         s
     }
 }
@@ -312,46 +314,46 @@ impl Mul<&Point> for Scalar {
 impl Div<Scalar> for Scalar {
     type Output = Scalar;
     fn div(self, q: Scalar) -> Self::Output {
- 	    let q1 = q.invert();
- 	    self * q1
+        let q1 = q.invert();
+        self * q1
     }
 }
 
 impl Div<&Scalar> for &Scalar {
     type Output = Scalar;
     fn div(self, q: &Scalar) -> Self::Output {
- 	    let q1 = q.invert();
- 	    self * q1
+        let q1 = q.invert();
+        self * q1
     }
 }
 
 impl Div<Scalar> for &Scalar {
     type Output = Scalar;
     fn div(self, q: Scalar) -> Self::Output {
- 	    let q1 = q.invert();
- 	    self * q1
+        let q1 = q.invert();
+        self * q1
     }
 }
 
 impl Div<&Scalar> for Scalar {
     type Output = Scalar;
     fn div(self, q: &Scalar) -> Self::Output {
- 	    let q1 = q.invert();
- 	    self * q1
+        let q1 = q.invert();
+        self * q1
     }
 }
 
 impl DivAssign<Scalar> for Scalar {
     fn div_assign(&mut self, q: Scalar) {
- 	    let q1 = q.invert();
- 	    *self = self.clone() * q1;
+        let q1 = q.invert();
+        *self = self.clone() * q1;
     }
 }
 
 impl DivAssign<&Scalar> for Scalar {
     fn div_assign(&mut self, q: &Scalar) {
- 	    let q1 = q.invert();
- 	    *self = self.clone() * q1;
+        let q1 = q.invert();
+        *self = self.clone() * q1;
     }
 }
 
@@ -401,18 +403,18 @@ impl Sub<&Scalar> for &Scalar {
 
 impl Zero for Scalar {
     fn zero() -> Self {
- 	    Scalar::from(0)
+        Scalar::from(0)
     }
     fn is_zero(&self) -> bool {
- 	    self == &Scalar::zero()
+        self == &Scalar::zero()
     }
 }
 
 impl One for Scalar {
     fn one() -> Self {
- 	    Scalar::from(1)
+        Scalar::from(1)
     }
     fn is_one(&self) -> bool {
- 	    self == &Scalar::one()
+        self == &Scalar::one()
     }
 }

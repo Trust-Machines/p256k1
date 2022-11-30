@@ -1,22 +1,16 @@
-use rand_core::{
-    CryptoRng, RngCore, OsRng,
-};
-use sha3::{
-    Digest, Sha3_256, 
-};
+use rand_core::{CryptoRng, OsRng, RngCore};
 use secp256k1_math::{
+    point::{Point, G},
     scalar::Scalar,
-    point::{
-        G, Point,
-    }
 };
+use sha3::{Digest, Sha3_256};
 
 fn hash_to_scalar(hasher: &mut Sha3_256) -> Scalar {
     let h = hasher.clone();
     let hash = h.finalize();
     let mut hash_bytes: [u8; 32] = [0; 32];
     hash_bytes.clone_from_slice(hash.as_slice());
-    
+
     Scalar::from(hash_bytes)
 }
 
@@ -41,12 +35,8 @@ impl SchnorrProof {
 
         let c = hash_to_scalar(&mut hasher);
         let r = v - &c * x;
-        
-        SchnorrProof{
-            X: X,
-            r: r,
-            V: V,
-        }
+
+        SchnorrProof { X: X, r: r, V: V }
     }
 
     #[allow(non_snake_case)]
@@ -58,7 +48,7 @@ impl SchnorrProof {
         hasher.update(self.V.compress().as_bytes());
 
         let c = hash_to_scalar(&mut hasher);
-        
+
         self.V == &self.r * &G + &c * &self.X
     }
 }
@@ -69,5 +59,4 @@ fn main() {
     let x = Scalar::random(&mut rng);
     let proof = SchnorrProof::new(&x, &mut rng);
     println!("SchnorrProof verify {}", proof.verify());
-    //println!("G {:?}", G);
 }

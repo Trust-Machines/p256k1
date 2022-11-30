@@ -1,27 +1,45 @@
+use ::num_traits::Zero;
 use core::{
+    cmp::{Eq, PartialEq},
     convert::From,
-    cmp::PartialEq,
-    fmt::{
-        Debug, Display, Formatter, Result,
-    },
-    ops::{
-        Add, AddAssign, Mul, Neg, Sub,
-    },
-    mem, slice
+    fmt::{Debug, Display, Formatter, Result},
+    hash::{Hash, Hasher},
+    mem,
+    ops::{Add, AddAssign, Mul, Neg, Sub},
+    slice,
 };
-use::num_traits::Zero;
 
 use crate::bindings::{
-    SECP256K1_CONTEXT_SIGN, SECP256K1_TAG_PUBKEY_ODD, SECP256K1_TAG_PUBKEY_EVEN, secp256k1_context, secp256k1_fe, secp256k1_ge, secp256k1_gej, secp256k1_ecmult, secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_context_create, secp256k1_ge_set_gej, secp256k1_ge_set_xo_var, secp256k1_gej_set_ge, secp256k1_fe_normalize_var, secp256k1_fe_is_odd, secp256k1_fe_get_b32, secp256k1_fe_set_b32,
+    secp256k1_context, secp256k1_context_create, secp256k1_ecmult, secp256k1_fe,
+    secp256k1_fe_get_b32, secp256k1_fe_is_odd, secp256k1_fe_normalize_var, secp256k1_fe_set_b32,
+    secp256k1_ge, secp256k1_ge_set_gej, secp256k1_ge_set_xo_var, secp256k1_gej,
+    secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_gej_set_ge, SECP256K1_CONTEXT_SIGN,
+    SECP256K1_TAG_PUBKEY_EVEN, SECP256K1_TAG_PUBKEY_ODD,
 };
 
 use crate::scalar::Scalar;
 
 pub const G: Point = Point {
     gej: secp256k1_gej {
-        x: secp256k1_fe { n: [705178180786072, 3855836460717471, 4089131105950716, 3301581525494108, 133858670344668] },
-        y: secp256k1_fe { n: [2199641648059576, 1278080618437060, 3959378566518708, 3455034269351872, 79417610544803] },
-        z: secp256k1_fe { n: [1, 0, 0, 0, 0], },
+        x: secp256k1_fe {
+            n: [
+                705178180786072,
+                3855836460717471,
+                4089131105950716,
+                3301581525494108,
+                133858670344668,
+            ],
+        },
+        y: secp256k1_fe {
+            n: [
+                2199641648059576,
+                1278080618437060,
+                3959378566518708,
+                3455034269351872,
+                79417610544803,
+            ],
+        },
+        z: secp256k1_fe { n: [1, 0, 0, 0, 0] },
         infinity: 0,
     },
 };
@@ -40,24 +58,16 @@ impl Point {
     pub fn identity() -> Self {
         Self {
             gej: secp256k1_gej {
-                x: secp256k1_fe {
-                    n: [0; 5],
-                },
-                y: secp256k1_fe {
-                    n: [0; 5],
-                },
-                z: secp256k1_fe {
-                    n: [0; 5],
-                },
+                x: secp256k1_fe { n: [0; 5] },
+                y: secp256k1_fe { n: [0; 5] },
+                z: secp256k1_fe { n: [0; 5] },
                 infinity: 1,
             },
         }
     }
 
     pub fn ctx() -> *const secp256k1_context {
-        unsafe {
-            secp256k1_context_create(SECP256K1_CONTEXT_SIGN)
-        }
+        unsafe { secp256k1_context_create(SECP256K1_CONTEXT_SIGN) }
     }
 
     #[allow(non_snake_case)]
@@ -67,31 +77,25 @@ impl Point {
 
     pub fn compress(&self) -> Compressed {
         unsafe {
-            let mut ge = secp256k1_ge{
-                x: secp256k1_fe {
-                    n: [0; 5],
-                },
-                y: secp256k1_fe {
-                    n: [0; 5],
-                },
+            let mut ge = secp256k1_ge {
+                x: secp256k1_fe { n: [0; 5] },
+                y: secp256k1_fe { n: [0; 5] },
                 infinity: 0,
             };
 
             secp256k1_ge_set_gej(&mut ge, &self.gej);
-	        secp256k1_fe_normalize_var(&mut ge.x);
+            secp256k1_fe_normalize_var(&mut ge.x);
             secp256k1_fe_normalize_var(&mut ge.y);
 
-            let mut c = Compressed {
-                data: [0; 33],
-            };
-            
+            let mut c = Compressed { data: [0; 33] };
+
             c.data[0] = if secp256k1_fe_is_odd(&ge.y) == 1 {
                 SECP256K1_TAG_PUBKEY_ODD.try_into().unwrap()
             } else {
                 SECP256K1_TAG_PUBKEY_EVEN.try_into().unwrap()
             };
-            
-	        secp256k1_fe_get_b32(&mut c.data[1], &ge.x);
+
+            secp256k1_fe_get_b32(&mut c.data[1], &ge.x);
 
             c
         }
@@ -107,10 +111,10 @@ impl Default for Point {
 impl Debug for Point {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         f.debug_struct("Point")
-         .field("x", &self.gej.x)
-         .field("y", &self.gej.y)
-         .field("z", &self.gej.z)
-         .finish()
+            .field("x", &self.gej.x)
+            .field("y", &self.gej.y)
+            .field("z", &self.gej.z)
+            .finish()
     }
 }
 
@@ -129,12 +133,20 @@ impl PartialEq for Point {
     }
 }
 
+impl Eq for Point {}
+
+impl Hash for Point {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        state.write(self.compress().as_bytes());
+    }
+}
+
 impl From<Scalar> for Point {
     fn from(x: Scalar) -> Self {
         let mut r = Point::new();
         let one = Scalar::from(1);
         let p = Point::new();
-        
+
         unsafe {
             secp256k1_ecmult(&mut r.gej, &p.gej, &one.scalar, &x.scalar);
         }
@@ -148,7 +160,7 @@ impl From<&Scalar> for Point {
         let mut r = Point::new();
         let one = Scalar::from(1);
         let p = Point::new();
-        
+
         unsafe {
             secp256k1_ecmult(&mut r.gej, &p.gej, &one.scalar, &x.scalar);
         }
@@ -160,25 +172,25 @@ impl From<&Scalar> for Point {
 impl From<Compressed> for Point {
     fn from(c: Compressed) -> Self {
         unsafe {
-            let mut y = secp256k1_ge{
-                x: secp256k1_fe {
-                    n: [0; 5],
-                },
-                y: secp256k1_fe {
-                    n: [0; 5],
-                },
+            let mut y = secp256k1_ge {
+                x: secp256k1_fe { n: [0; 5] },
+                y: secp256k1_fe { n: [0; 5] },
                 infinity: 1,
             };
-            
-            let mut x = secp256k1_fe {
-                n: [0; 5],
-            };
+
+            let mut x = secp256k1_fe { n: [0; 5] };
 
             let _rx = secp256k1_fe_set_b32(&mut x, &c.data[1]);
-            let _ry = secp256k1_ge_set_xo_var(&mut y, &x, (c.data[0] as u32 == SECP256K1_TAG_PUBKEY_ODD).try_into().unwrap());
+            let _ry = secp256k1_ge_set_xo_var(
+                &mut y,
+                &x,
+                (c.data[0] as u32 == SECP256K1_TAG_PUBKEY_ODD)
+                    .try_into()
+                    .unwrap(),
+            );
 
             let mut r = Point::new();
-            
+
             secp256k1_gej_set_ge(&mut r.gej, &y);
 
             r
@@ -341,12 +353,12 @@ impl Sub<&Point> for &Point {
 }
 
 impl Zero for Point {
-     fn zero() -> Self {
- 	     Point::identity()
-     }
-     fn is_zero(&self) -> bool {
- 	     self == &Point::identity()
-     }
+    fn zero() -> Self {
+        Point::identity()
+    }
+    fn is_zero(&self) -> bool {
+        self == &Point::identity()
+    }
 }
 
 pub struct Compressed {
@@ -359,23 +371,18 @@ impl Compressed {
         let bs: &[u8] = unsafe { slice::from_raw_parts(up, mem::size_of::<u8>() * 33) };
 
         bs
-
     }
 }
 
 impl From<[u8; 33]> for Compressed {
     fn from(bytes: [u8; 33]) -> Self {
-        Self {
-            data: bytes,
-        }
+        Self { data: bytes }
     }
 }
 
 impl From<&[u8]> for Compressed {
     fn from(bytes: &[u8]) -> Self {
-        let mut r = Compressed {
-            data: [0; 33],
-        };
+        let mut r = Compressed { data: [0; 33] };
 
         r.data.clone_from_slice(bytes);
         r

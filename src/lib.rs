@@ -5,5 +5,5 @@
 #[allow(non_upper_case_globals)]
 mod bindings;
 
-pub mod scalar;
 pub mod point;
+pub mod scalar;
