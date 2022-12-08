@@ -388,3 +388,85 @@ impl From<&[u8]> for Compressed {
         r
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand_core::OsRng;
+
+    #[test]
+    fn from() {
+        let mut rng = OsRng::default();
+
+        for _ in 0..0xff {
+            let x = Scalar::random(&mut rng);
+            let p = Point::from(x);
+
+            assert_eq!(p, x * G);
+        }
+    }
+
+    #[test]
+    fn identity() {
+        let mut rng = OsRng::default();
+
+        for _ in 0..0xff {
+            let x = Scalar::random(&mut rng);
+            let p = Point::from(x);
+
+            assert_eq!(p + Point::identity(), p);
+        }
+    }
+
+    #[test]
+    fn add() {
+        let mut rng = OsRng::default();
+
+        for _ in 0..0xff {
+            let x = Scalar::random(&mut rng);
+            let y = Scalar::random(&mut rng);
+
+            assert_eq!(Point::from(x) + Point::from(y), Point::from(x + y));
+        }
+    }
+
+    #[test]
+    fn sub() {
+        let mut rng = OsRng::default();
+
+        for _ in 0..0xff {
+            let x = Scalar::random(&mut rng);
+            let y = Scalar::random(&mut rng);
+
+            assert_eq!(Point::from(x) - Point::from(y), Point::from(x - y));
+        }
+    }
+
+    #[test]
+    fn mul() {
+        let mut rng = OsRng::default();
+
+        for _ in 0..0xff {
+            let x = Scalar::random(&mut rng);
+            let y = Scalar::random(&mut rng);
+            let px = Point::from(x);
+
+            assert_eq!(y * px, x * y * G);
+        }
+    }
+
+    #[test]
+    fn add_assign() {
+        let mut rng = OsRng::default();
+
+        for x in 0..0xff {
+            let x = Scalar::random(&mut rng);
+            let y = Scalar::random(&mut rng);
+            let mut p = Point::from(x);
+
+            p += Point::from(y);
+
+            assert_eq!(p, Point::from(x + y));
+        }
+    }
+}

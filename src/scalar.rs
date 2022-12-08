@@ -418,3 +418,122 @@ impl One for Scalar {
         self == &Scalar::one()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand_core::OsRng;
+
+    #[test]
+    fn from() {
+        for x in 0..0xff {
+            let s = Scalar::from(x);
+            assert_eq!(s.as_bytes()[0], x as u8);
+        }
+    }
+
+    #[test]
+    fn zero() {
+        assert_eq!(Scalar::zero(), Scalar::from(0));
+    }
+
+    #[test]
+    fn one() {
+        assert_eq!(Scalar::one(), Scalar::from(1));
+    }
+
+    #[test]
+    fn add() {
+        for x in 0..0xff {
+            for y in 0..0xff {
+                assert_eq!(Scalar::from(x) + Scalar::from(y), Scalar::from(x + y));
+            }
+        }
+    }
+
+    #[test]
+    fn sub() {
+        for x in 0..0xff {
+            for y in 0..x {
+                assert_eq!(Scalar::from(x) - Scalar::from(y), Scalar::from(x - y));
+            }
+        }
+    }
+
+    #[test]
+    fn mul() {
+        for x in 0..0xff {
+            for y in 0..0xff {
+                assert_eq!(Scalar::from(x) * Scalar::from(y), Scalar::from(x * y));
+            }
+        }
+    }
+
+    #[test]
+    fn div() {
+        for x in 0..0xff {
+            for y in 1..x {
+                if x % y == 0 {
+                    assert_eq!(Scalar::from(x) / Scalar::from(y), Scalar::from(x / y));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn add_assign() {
+        for x in 0..0xff {
+            for y in 0..0xff {
+                let mut s = Scalar::from(x);
+                s += Scalar::from(y);
+                assert_eq!(s, Scalar::from(x + y));
+            }
+        }
+    }
+
+    #[test]
+    fn mul_assign() {
+        for x in 0..0xff {
+            for y in 0..0xff {
+                let mut s = Scalar::from(x);
+                s *= Scalar::from(y);
+                assert_eq!(s, Scalar::from(x * y));
+            }
+        }
+    }
+
+    #[test]
+    fn div_assign() {
+        for x in 0..0xff {
+            for y in 1..x {
+                if x % y == 0 {
+                    let mut s = Scalar::from(x);
+                    s /= Scalar::from(y);
+                    assert_eq!(s, Scalar::from(x / y));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn invert() {
+        let mut rng = OsRng::default();
+
+        for _ in 0..0xff {
+            let x = Scalar::random(&mut rng);
+
+            assert_eq!(x * x.invert(), Scalar::from(1));
+        }
+    }
+
+    #[test]
+    fn neg() {
+        let mut rng = OsRng::default();
+
+        for _ in 0..0xff {
+            let x = Scalar::random(&mut rng);
+
+            assert_eq!(x + (-x), Scalar::from(0));
+        }
+    }
+}
