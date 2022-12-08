@@ -5,7 +5,7 @@ use core::{
     fmt::{Debug, Display, Formatter, Result},
     hash::{Hash, Hasher},
     mem,
-    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub},
+    ops::{Add, AddAssign, BitXor, Div, DivAssign, Mul, MulAssign, Neg, Sub},
     slice,
 };
 use rand_core::{CryptoRng, RngCore};
@@ -419,6 +419,62 @@ impl One for Scalar {
     }
 }
 
+impl BitXor<usize> for Scalar {
+    type Output = Scalar;
+
+    fn bitxor(self, rhs: usize) -> Self::Output {
+        let mut ret = Scalar::one();
+
+        for _ in 0..rhs {
+            ret *= self;
+        }
+
+        ret
+    }
+}
+
+impl BitXor<usize> for &Scalar {
+    type Output = Scalar;
+
+    fn bitxor(self, rhs: usize) -> Self::Output {
+        let mut ret = Scalar::one();
+
+        for _ in 0..rhs {
+            ret *= self;
+        }
+
+        ret
+    }
+}
+
+impl BitXor<u32> for Scalar {
+    type Output = Scalar;
+
+    fn bitxor(self, rhs: u32) -> Self::Output {
+        let mut ret = Scalar::one();
+
+        for _ in 0..rhs {
+            ret *= self;
+        }
+
+        ret
+    }
+}
+
+impl BitXor<u32> for &Scalar {
+    type Output = Scalar;
+
+    fn bitxor(self, rhs: u32) -> Self::Output {
+        let mut ret = Scalar::one();
+
+        for _ in 0..rhs {
+            ret *= self;
+        }
+
+        ret
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -534,6 +590,20 @@ mod tests {
             let x = Scalar::random(&mut rng);
 
             assert_eq!(x + (-x), Scalar::from(0));
+        }
+    }
+
+    #[test]
+    fn pow() {
+        let mut rng = OsRng::default();
+        let i: usize = 4;
+        let j: u32 = 5;
+
+        for _ in 0..0xff {
+            let x = Scalar::random(&mut rng);
+
+            assert_eq!(x * x * x * x, x ^ i);
+            assert_eq!(x * x * x * x * x, x ^ j);
         }
     }
 }

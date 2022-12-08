@@ -459,7 +459,7 @@ mod tests {
     fn add_assign() {
         let mut rng = OsRng::default();
 
-        for x in 0..0xff {
+        for _ in 0..0xff {
             let x = Scalar::random(&mut rng);
             let y = Scalar::random(&mut rng);
             let mut p = Point::from(x);
