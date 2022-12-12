@@ -6,6 +6,7 @@
 #[allow(unaligned_references)]
 #[allow(deref_nullptr)]
 mod bindings;
+mod impl_serde;
 
 pub mod point;
 pub mod scalar;
