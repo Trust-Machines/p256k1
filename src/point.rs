@@ -1,4 +1,3 @@
-use ::num_traits::Zero;
 use core::{
     cmp::{Eq, PartialEq},
     convert::From,
@@ -8,6 +7,7 @@ use core::{
     ops::{Add, AddAssign, Mul, Neg, Sub},
     slice,
 };
+use num_traits::Zero;
 
 use crate::bindings::{
     secp256k1_context, secp256k1_context_create, secp256k1_ecmult, secp256k1_fe,
@@ -44,7 +44,7 @@ pub const G: Point = Point {
     },
 };
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Point {
     pub gej: secp256k1_gej,
 }

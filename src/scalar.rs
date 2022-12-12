@@ -1,4 +1,3 @@
-use ::num_traits::{One, Zero};
 use core::{
     cmp::{Eq, PartialEq},
     convert::From,
@@ -8,6 +7,7 @@ use core::{
     ops::{Add, AddAssign, BitXor, Div, DivAssign, Mul, MulAssign, Neg, Sub},
     slice,
 };
+use num_traits::{One, Zero};
 use rand_core::{CryptoRng, RngCore};
 
 use crate::bindings::{
@@ -18,7 +18,7 @@ use crate::bindings::{
 
 use crate::point::Point;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Scalar {
     pub scalar: secp256k1_scalar,
 }

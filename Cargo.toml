@@ -6,10 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rand_core = { version = "0.5", features = ["getrandom"] }
-sha3 = "0.10"
-num-traits = "0.2"
 hex = "0.4"
+num-traits = "0.2"
+rand_core = { version = "0.5", features = ["getrandom"] }
+serde = { version = "1.0", features = ["derive"] }
+sha3 = "0.10"
 
 [build-dependencies]
 bindgen = "0.53.1"
