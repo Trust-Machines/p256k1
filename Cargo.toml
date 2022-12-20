@@ -6,14 +6,22 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rand_core = { version = "0.5", features = ["getrandom"] }
-sha3 = "0.10"
-num-traits = "0.2"
 hex = "0.4"
+num-traits = "0.2"
+rand_core = { version = "0.5", features = ["getrandom"] }
+serde = { version = "1.0", features = ["derive"] }
+sha3 = "0.10"
 
 [build-dependencies]
 bindgen = "0.53.1"
 cc = "1.0.28"
+
+# For serde derives
+itertools = "0.10.5"
+proc-macro2 = "1.0.4"
+quote = "1.0.21"
+rustfmt-wrapper = "0.2.0"
+syn = { version = "1.0.105", features = ["full"] }
 
 [dev-dependencies]
 libc = "0.2"

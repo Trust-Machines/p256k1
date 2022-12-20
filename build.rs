@@ -1,4 +1,8 @@
-extern crate bindgen;
+use std::collections::HashSet;
+use std::iter::FromIterator;
+
+use itertools::Itertools;
+use quote::ToTokens;
 
 fn main() {
     println!("cargo:rustc-env=ECMULT_GEN_PREC_BITS=4");
@@ -44,8 +48,86 @@ fn main() {
         // Unwrap the Result and panic on failure.
         .expect("Unable to generate bindings");
 
+    let bindings_file = "src/bindings.rs";
+
     // Write the bindings to the $OUT_DIR/bindings.rs file.
     bindings
-        .write_to_file("src/bindings.rs")
+        .write_to_file(bindings_file)
         .expect("Couldn't write bindings!");
+
+    let serializable_types = ["secp256k1_scalar", "secp256k1_fe", "secp256k1_gej"];
+
+    add_serde_derive_attributes(&serializable_types, bindings_file)
+        .expect("Failed to add serde derive to type definitions");
+}
+
+fn add_serde_derive_attributes<P: AsRef<std::path::Path>>(
+    to_type_definitions: &[&str],
+    file_path: P,
+) -> Result<(), Error> {
+    let file_content = std::fs::read_to_string(&file_path).map_err(Error::Io)?;
+    let syntax = syn::parse_file(&file_content).map_err(Error::Syntax)?;
+    let type_identifiers: HashSet<_> = to_type_definitions
+        .into_iter()
+        .map(|name| proc_macro2::Ident::new(name, proc_macro2::Span::call_site()))
+        .collect();
+
+    let token_stream_with_added_derives = add_serde_derive_tokens(&type_identifiers, &syntax);
+
+    let formatted_output = rustfmt_wrapper::rustfmt(proc_macro2::TokenStream::from_iter(
+        token_stream_with_added_derives,
+    ))
+    .map_err(Error::Format)?;
+
+    std::fs::write(&file_path, formatted_output).map_err(Error::Io)?;
+
+    Ok(())
+}
+
+#[derive(Debug)]
+enum Error {
+    Io(std::io::Error),
+    Syntax(syn::Error),
+    Format(rustfmt_wrapper::Error),
+}
+
+fn add_serde_derive_tokens<'a>(
+    type_identifiers: &'a HashSet<proc_macro2::Ident>,
+    syntax: &'a syn::File,
+) -> impl Iterator<Item = proc_macro2::TokenTree> + 'a {
+    syntax
+        .into_token_stream()
+        .into_iter()
+        .collect::<Vec<_>>()
+        .into_iter()
+        .circular_tuple_windows()
+        .flat_map(move |token_tuple| expand_tokens_if_matches(&type_identifiers, token_tuple))
+}
+
+type TokenTuple = (
+    proc_macro2::TokenTree,
+    proc_macro2::TokenTree,
+    proc_macro2::TokenTree,
+);
+
+fn expand_tokens_if_matches(
+    type_identifiers: &HashSet<proc_macro2::Ident>,
+    tokens: TokenTuple,
+) -> Vec<proc_macro2::TokenTree> {
+    match tokens {
+        (token, _, proc_macro2::TokenTree::Ident(ident)) => {
+            if type_identifiers.contains(&ident) {
+                let tokens = quote::quote! {
+                #[derive(serde::Serialize, serde::Deserialize)]
+                };
+
+                let mut expanded: Vec<_> = tokens.into_iter().collect();
+                expanded.push(token);
+                expanded
+            } else {
+                vec![token]
+            }
+        }
+        (token, _, _) => vec![token],
+    }
 }
