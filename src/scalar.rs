@@ -63,6 +63,12 @@ impl Scalar {
     }
 }
 
+impl Default for Scalar {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Display for Scalar {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         write!(f, "{}", hex::encode(self.as_bytes()))
@@ -96,7 +102,7 @@ impl From<u32> for Scalar {
 impl From<[u8; 32]> for Scalar {
     fn from(bytes: [u8; 32]) -> Self {
         let mut s = Scalar::new();
-        let null = 0 as *mut ::std::os::raw::c_int;
+        let null = std::ptr::null_mut::<::std::os::raw::c_int>();
         let p: *const u8 = bytes.as_ptr();
 
         unsafe {
@@ -346,14 +352,14 @@ impl Div<&Scalar> for Scalar {
 impl DivAssign<Scalar> for Scalar {
     fn div_assign(&mut self, q: Scalar) {
         let q1 = q.invert();
-        *self = self.clone() * q1;
+        *self *= q1;
     }
 }
 
 impl DivAssign<&Scalar> for Scalar {
     fn div_assign(&mut self, q: &Scalar) {
         let q1 = q.invert();
-        *self = self.clone() * q1;
+        *self *= q1;
     }
 }
 

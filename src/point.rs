@@ -205,7 +205,7 @@ impl Add for Point {
         let mut r = Point::new();
 
         unsafe {
-            let null = 0 as *mut secp256k1_fe;
+            let null = std::ptr::null_mut::<secp256k1_fe>();
             secp256k1_gej_add_var(&mut r.gej, &self.gej, &other.gej, null);
         }
 
@@ -220,7 +220,7 @@ impl Add<&Point> for &Point {
         let mut r = Point::new();
 
         unsafe {
-            let null = 0 as *mut secp256k1_fe;
+            let null = std::ptr::null_mut::<secp256k1_fe>();
             secp256k1_gej_add_var(&mut r.gej, &self.gej, &other.gej, null);
         }
 
@@ -235,7 +235,7 @@ impl Add<Point> for &Point {
         let mut r = Point::new();
 
         unsafe {
-            let null = 0 as *mut secp256k1_fe;
+            let null = std::ptr::null_mut::<secp256k1_fe>();
             secp256k1_gej_add_var(&mut r.gej, &self.gej, &other.gej, null);
         }
 
@@ -250,7 +250,7 @@ impl Add<&Point> for Point {
         let mut r = Point::new();
 
         unsafe {
-            let null = 0 as *mut secp256k1_fe;
+            let null = std::ptr::null_mut::<secp256k1_fe>();
             secp256k1_gej_add_var(&mut r.gej, &self.gej, &other.gej, null);
         }
 
@@ -261,7 +261,7 @@ impl Add<&Point> for Point {
 impl AddAssign<Point> for Point {
     fn add_assign(&mut self, other: Point) {
         unsafe {
-            let null = 0 as *mut secp256k1_fe;
+            let null = std::ptr::null_mut::<secp256k1_fe>();
             secp256k1_gej_add_var(&mut self.gej, &self.gej, &other.gej, null);
         }
     }
@@ -270,7 +270,7 @@ impl AddAssign<Point> for Point {
 impl AddAssign<&Point> for Point {
     fn add_assign(&mut self, other: &Point) {
         unsafe {
-            let null = 0 as *mut secp256k1_fe;
+            let null = std::ptr::null_mut::<secp256k1_fe>();
             secp256k1_gej_add_var(&mut self.gej, &self.gej, &other.gej, null);
         }
     }
@@ -368,6 +368,7 @@ pub struct Compressed {
 impl Compressed {
     pub fn as_bytes(&self) -> &[u8] {
         let up: *const u8 = self.data.as_ptr();
+        #[allow(clippy::size_of_in_element_count)]
         let bs: &[u8] = unsafe { slice::from_raw_parts(up, mem::size_of::<u8>() * 33) };
 
         bs

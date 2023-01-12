@@ -5,6 +5,7 @@
 #[allow(non_upper_case_globals)]
 #[allow(unaligned_references)]
 #[allow(deref_nullptr)]
+#[allow(clippy::all)]
 mod bindings;
 
 pub mod point;

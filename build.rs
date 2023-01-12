@@ -68,7 +68,7 @@ fn add_serde_derive_attributes<P: AsRef<std::path::Path>>(
     let file_content = std::fs::read_to_string(&file_path).map_err(Error::Io)?;
     let syntax = syn::parse_file(&file_content).map_err(Error::Syntax)?;
     let type_identifiers: HashSet<_> = to_type_definitions
-        .into_iter()
+        .iter()
         .map(|name| proc_macro2::Ident::new(name, proc_macro2::Span::call_site()))
         .collect();
 
@@ -101,7 +101,7 @@ fn add_serde_derive_tokens<'a>(
         .collect::<Vec<_>>()
         .into_iter()
         .circular_tuple_windows()
-        .flat_map(move |token_tuple| expand_tokens_if_matches(&type_identifiers, token_tuple))
+        .flat_map(move |token_tuple| expand_tokens_if_matches(type_identifiers, token_tuple))
 }
 
 type TokenTuple = (

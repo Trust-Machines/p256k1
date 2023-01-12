@@ -36,7 +36,7 @@ impl SchnorrProof {
         let c = hash_to_scalar(&mut hasher);
         let r = v - &c * x;
 
-        SchnorrProof { X: X, r: r, V: V }
+        SchnorrProof { X, r, V }
     }
 
     #[allow(non_snake_case)]
