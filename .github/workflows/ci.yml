@@ -9,8 +9,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - uses: Mushus/checkout-submodule@v1.0.1
         with:
-          submodules: update
+          submodulePath: secp256k1
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
