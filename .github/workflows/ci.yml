@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          command: submodules
+          submodules: all
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
