@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          command: --recurse-submodules
+          command: submodules
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
