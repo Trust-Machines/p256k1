@@ -1,5 +1,5 @@
 [package]
-name = "secp256k1-math"
+name = "p256k1"
 version = "0.1.0"
 edition = "2021"
 

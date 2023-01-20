@@ -1,8 +1,8 @@
-use rand_core::{CryptoRng, OsRng, RngCore};
-use secp256k1_math::{
+use p256k1::{
     point::{Point, G},
     scalar::Scalar,
 };
+use rand_core::{CryptoRng, OsRng, RngCore};
 use sha3::{Digest, Sha3_256};
 
 fn hash_to_scalar(hasher: &mut Sha3_256) -> Scalar {

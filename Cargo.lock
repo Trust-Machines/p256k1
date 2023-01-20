@@ -336,6 +336,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "p256k1"
+version = "0.1.0"
+dependencies = [
+ "bindgen",
+ "cc",
+ "hex",
+ "itertools",
+ "libc",
+ "num-traits",
+ "proc-macro2",
+ "quote",
+ "rand_core",
+ "rustfmt-wrapper",
+ "serde",
+ "sha3",
+ "syn",
+]
+
+[[package]]
 name = "peeking_take_while"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -445,25 +464,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502"
 dependencies = [
  "winapi-util",
-]
-
-[[package]]
-name = "secp256k1-math"
-version = "0.1.0"
-dependencies = [
- "bindgen",
- "cc",
- "hex",
- "itertools",
- "libc",
- "num-traits",
- "proc-macro2",
- "quote",
- "rand_core",
- "rustfmt-wrapper",
- "serde",
- "sha3",
- "syn",
 ]
 
 [[package]]
