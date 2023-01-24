@@ -1,4 +1,4 @@
-# rust-secp256k1-math
+# p256k1
 Wrappers around secp256k1 to expose the underlying math, specifically unwrapped points and scalars with multiexponentiation.
 
 ## Dependencies
