@@ -1,3 +1,4 @@
+use bitvec::prelude::*;
 use core::{
     cmp::{Eq, PartialEq},
     convert::From,
@@ -60,6 +61,72 @@ impl Scalar {
         let bs: &[u8] = unsafe { slice::from_raw_parts(bp, mem::size_of::<u64>() * 4) };
 
         bs
+    }
+
+    pub fn square_and_multiply(x: &Scalar, n: &Scalar) -> Scalar {
+        let mut ret = Scalar::one();
+        let mut square = *x;
+        let mut bitvec: Vec<bool> = Vec::new();
+
+        for byte in n.as_bytes() {
+            let bits = byte.view_bits::<Lsb0>();
+            for bit in bits {
+                bitvec.push(*bit);
+            }
+        }
+
+        for bit in bitvec {
+            if bit {
+                ret *= square;
+            }
+            square *= square;
+        }
+
+        ret
+    }
+
+    pub fn square_and_multiply_usize(x: &Scalar, n: usize) -> Scalar {
+        let mut ret = Scalar::one();
+        let mut square = *x;
+        let mut bitvec: Vec<bool> = Vec::new();
+
+        for byte in n.to_le_bytes() {
+            let bits = byte.view_bits::<Lsb0>();
+            for bit in bits {
+                bitvec.push(*bit);
+            }
+        }
+
+        for bit in bitvec {
+            if bit {
+                ret *= square;
+            }
+            square *= square;
+        }
+
+        ret
+    }
+
+    pub fn square_and_multiply_u32(x: &Scalar, n: u32) -> Scalar {
+        let mut ret = Scalar::one();
+        let mut square = *x;
+        let mut bitvec: Vec<bool> = Vec::new();
+
+        for byte in n.to_le_bytes() {
+            let bits = byte.view_bits::<Lsb0>();
+            for bit in bits {
+                bitvec.push(*bit);
+            }
+        }
+
+        for bit in bitvec {
+            if bit {
+                ret *= square;
+            }
+            square *= square;
+        }
+
+        ret
     }
 }
 
@@ -429,13 +496,7 @@ impl BitXor<usize> for Scalar {
     type Output = Scalar;
 
     fn bitxor(self, rhs: usize) -> Self::Output {
-        let mut ret = Scalar::one();
-
-        for _ in 0..rhs {
-            ret *= self;
-        }
-
-        ret
+        Scalar::square_and_multiply_usize(&self, rhs)
     }
 }
 
@@ -443,13 +504,7 @@ impl BitXor<usize> for &Scalar {
     type Output = Scalar;
 
     fn bitxor(self, rhs: usize) -> Self::Output {
-        let mut ret = Scalar::one();
-
-        for _ in 0..rhs {
-            ret *= self;
-        }
-
-        ret
+        Scalar::square_and_multiply_usize(self, rhs)
     }
 }
 
@@ -457,13 +512,7 @@ impl BitXor<u32> for Scalar {
     type Output = Scalar;
 
     fn bitxor(self, rhs: u32) -> Self::Output {
-        let mut ret = Scalar::one();
-
-        for _ in 0..rhs {
-            ret *= self;
-        }
-
-        ret
+        Scalar::square_and_multiply_u32(&self, rhs)
     }
 }
 
@@ -471,13 +520,39 @@ impl BitXor<u32> for &Scalar {
     type Output = Scalar;
 
     fn bitxor(self, rhs: u32) -> Self::Output {
-        let mut ret = Scalar::one();
+        Scalar::square_and_multiply_u32(self, rhs)
+    }
+}
 
-        for _ in 0..rhs {
-            ret *= self;
-        }
+impl BitXor<Scalar> for Scalar {
+    type Output = Scalar;
 
-        ret
+    fn bitxor(self, rhs: Scalar) -> Self::Output {
+        Scalar::square_and_multiply(&self, &rhs)
+    }
+}
+
+impl BitXor<Scalar> for &Scalar {
+    type Output = Scalar;
+
+    fn bitxor(self, rhs: Scalar) -> Self::Output {
+        Scalar::square_and_multiply(self, &rhs)
+    }
+}
+
+impl BitXor<&Scalar> for Scalar {
+    type Output = Scalar;
+
+    fn bitxor(self, rhs: &Scalar) -> Self::Output {
+        Scalar::square_and_multiply(&self, &rhs)
+    }
+}
+
+impl BitXor<&Scalar> for &Scalar {
+    type Output = Scalar;
+
+    fn bitxor(self, rhs: &Scalar) -> Self::Output {
+        Scalar::square_and_multiply(self, &rhs)
     }
 }
 
@@ -602,14 +677,20 @@ mod tests {
     #[test]
     fn pow() {
         let mut rng = OsRng::default();
-        let i: usize = 4;
-        let j: u32 = 5;
+        let i: u32 = 17;
+        let j: usize = 64;
+        let k: u32 = 253;
+        let ks = Scalar::from(k);
 
         for _ in 0..0xff {
             let x = Scalar::random(&mut rng);
 
-            assert_eq!(x * x * x * x, x ^ i);
-            assert_eq!(x * x * x * x * x, x ^ j);
+            let ilhs = (0..i).fold(Scalar::one(), |s, _| s * x);
+            assert_eq!(ilhs, x ^ i);
+            let jlhs = (0..j).fold(Scalar::one(), |s, _| s * x);
+            assert_eq!(jlhs, x ^ j);
+            let klhs = (0..k).fold(Scalar::one(), |s, _| s * x);
+            assert_eq!(klhs, x ^ ks);
         }
     }
 }
