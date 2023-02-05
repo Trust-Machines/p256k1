@@ -1,6 +1,6 @@
 # p256k1
 
-![ci](https://github.com/Trust-Machines/p256k1/actions/workflows/ci.yml/badge.svg?branch=master)
+![ci](https://github.com/Trust-Machines/p256k1/actions/workflows/ci.yml/badge.svg)
 
 Wrappers around secp256k1 to expose the underlying math, specifically unwrapped points and scalars with multiexponentiation.
 
