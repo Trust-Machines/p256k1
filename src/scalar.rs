@@ -84,11 +84,20 @@ impl Scalar {
         let mut ret = Scalar::one();
         let mut square = *x;
 
+        if n == 0 {
+            return ret;
+        }
+
+        let log = n.ilog2() + 1;
+        let mut i: u32 = 0;
         for byte in n.to_le_bytes() {
             let bits = byte.view_bits::<Lsb0>();
             for bit in bits {
                 if *bit {
                     ret *= square;
+                }
+                if {i+=1; i} > log {
+                    return ret;
                 }
                 square *= square;
             }
@@ -101,11 +110,20 @@ impl Scalar {
         let mut ret = Scalar::one();
         let mut square = *x;
 
+        if n == 0 {
+            return ret;
+        }
+
+        let log = n.ilog2() + 1;
+        let mut i: u32 = 0;
         for byte in n.to_le_bytes() {
             let bits = byte.view_bits::<Lsb0>();
             for bit in bits {
                 if *bit {
                     ret *= square;
+                }
+                if {i+=1; i} > log {
+                    return ret;
                 }
                 square *= square;
             }
