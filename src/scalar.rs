@@ -66,20 +66,15 @@ impl Scalar {
     pub fn square_and_multiply(x: &Scalar, n: &Scalar) -> Scalar {
         let mut ret = Scalar::one();
         let mut square = *x;
-        let mut bitvec: Vec<bool> = Vec::new();
 
         for byte in n.as_bytes() {
             let bits = byte.view_bits::<Lsb0>();
             for bit in bits {
-                bitvec.push(*bit);
+                if *bit {
+                    ret *= square;
+                }
+                square *= square;
             }
-        }
-
-        for bit in bitvec {
-            if bit {
-                ret *= square;
-            }
-            square *= square;
         }
 
         ret
@@ -88,20 +83,15 @@ impl Scalar {
     pub fn square_and_multiply_usize(x: &Scalar, n: usize) -> Scalar {
         let mut ret = Scalar::one();
         let mut square = *x;
-        let mut bitvec: Vec<bool> = Vec::new();
 
         for byte in n.to_le_bytes() {
             let bits = byte.view_bits::<Lsb0>();
             for bit in bits {
-                bitvec.push(*bit);
+                if *bit {
+                    ret *= square;
+                }
+                square *= square;
             }
-        }
-
-        for bit in bitvec {
-            if bit {
-                ret *= square;
-            }
-            square *= square;
         }
 
         ret
@@ -110,20 +100,15 @@ impl Scalar {
     pub fn square_and_multiply_u32(x: &Scalar, n: u32) -> Scalar {
         let mut ret = Scalar::one();
         let mut square = *x;
-        let mut bitvec: Vec<bool> = Vec::new();
 
         for byte in n.to_le_bytes() {
             let bits = byte.view_bits::<Lsb0>();
             for bit in bits {
-                bitvec.push(*bit);
+                if *bit {
+                    ret *= square;
+                }
+                square *= square;
             }
-        }
-
-        for bit in bitvec {
-            if bit {
-                ret *= square;
-            }
-            square *= square;
         }
 
         ret
