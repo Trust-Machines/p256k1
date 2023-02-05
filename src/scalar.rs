@@ -96,7 +96,11 @@ impl Scalar {
                 if *bit {
                     ret *= square;
                 }
-                if {i+=1; i} > log {
+                if {
+                    i += 1;
+                    i
+                } > log
+                {
                     return ret;
                 }
                 square *= square;
@@ -122,7 +126,11 @@ impl Scalar {
                 if *bit {
                     ret *= square;
                 }
-                if {i+=1; i} > log {
+                if {
+                    i += 1;
+                    i
+                } > log
+                {
                     return ret;
                 }
                 square *= square;
