@@ -12,11 +12,13 @@ use num_traits::Zero;
 use std::os::raw::c_void;
 
 use crate::bindings::{
-    secp256k1_callback, secp256k1_context, secp256k1_context_create, secp256k1_ecmult, secp256k1_ecmult_multi_callback, secp256k1_ecmult_multi_var, secp256k1_fe,
+    secp256k1_callback, secp256k1_context, secp256k1_context_create, secp256k1_ecmult,
+    secp256k1_ecmult_multi_callback, secp256k1_ecmult_multi_var, secp256k1_fe,
     secp256k1_fe_get_b32, secp256k1_fe_is_odd, secp256k1_fe_normalize_var, secp256k1_fe_set_b32,
     secp256k1_ge, secp256k1_ge_set_gej, secp256k1_ge_set_xo_var, secp256k1_gej,
-    secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_gej_set_ge, secp256k1_scalar, secp256k1_scratch, size_t, SECP256K1_CONTEXT_SIGN,
-    SECP256K1_TAG_PUBKEY_EVEN, SECP256K1_TAG_PUBKEY_ODD,
+    secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_gej_set_ge, secp256k1_scalar,
+    secp256k1_scratch, size_t, SECP256K1_CONTEXT_SIGN, SECP256K1_TAG_PUBKEY_EVEN,
+    SECP256K1_TAG_PUBKEY_ODD,
 };
 
 use crate::scalar::Scalar;
@@ -85,8 +87,6 @@ pub extern "C" fn ecmult_multi_callback(
     idx: size_t,
     data: *mut ::std::os::raw::c_void,
 ) -> ::std::os::raw::c_int {
-    // data points to a (&mut Scalars, &mut Points)
-    //println!("ecmult_multi_callback({} {:?})", idx, data);
     println!("ecmult_multi_callback({})", idx);
     unsafe {
         let sp: *mut ScalarsPoints = data as *mut ScalarsPoints;
@@ -97,12 +97,10 @@ pub extern "C" fn ecmult_multi_callback(
             infinity: 0,
         };
 
-        let p: *const secp256k1_gej = &(*sp).p[idx as usize].gej as *const _ as *const secp256k1_gej;
-        let s: *const secp256k1_scalar = &(*sp).s[idx as usize].scalar as *const _ as *const secp256k1_scalar;
-        
-        secp256k1_ge_set_gej(&mut ge, p);
+        let gej = &(*sp).p[idx as usize].gej as *const secp256k1_gej;
+        secp256k1_ge_set_gej(&mut ge, gej);
 
-        *sc = *s;
+        *sc = (*sp).s[idx as usize].scalar;
         *pt = ge;
     }
 
@@ -164,14 +162,15 @@ impl Point {
     pub fn multimult(scalars: &Vec<Scalar>, points: &Vec<Point>) -> Result<Point, Error> {
         let mut r = Point::new();
         let n = scalars.len() as u64;
-        let mut sp = ScalarsPoints{
+        let mut sp = ScalarsPoints {
             s: scalars.clone(),
             p: points.clone(),
         };
         let sp_ptr: *mut c_void = &mut sp as *mut _ as *mut c_void;
         let error_callback_data = [0u8; 32];
-        let error_callback_data_ptr: *const c_void = &error_callback_data as *const _ as *const c_void;
-        let multi_error_callback = secp256k1_callback{
+        let error_callback_data_ptr: *const c_void =
+            &error_callback_data as *const _ as *const c_void;
+        let multi_error_callback = secp256k1_callback {
             fn_: Some(error_callback),
             data: error_callback_data_ptr,
         };
@@ -179,24 +178,31 @@ impl Point {
         let zero = Scalar::zero();
         let mut scratch_data = [0u8; 16384];
         let scratch_data_ptr: *mut c_void = &mut scratch_data as *mut _ as *mut c_void;
-        let mut scratch = secp256k1_scratch{
+        let mut scratch = secp256k1_scratch {
             magic: [0u8; 8],
             data: scratch_data_ptr,
             max_size: scratch_data.len() as u64,
             alloc_size: scratch_data.len() as u64,
         };
 
-        let multi_callback: secp256k1_ecmult_multi_callback =
-            Some(ecmult_multi_callback);
+        let multi_callback: secp256k1_ecmult_multi_callback = Some(ecmult_multi_callback);
         println!("enter unsafe");
         unsafe {
-            let i = secp256k1_ecmult_multi_var(&multi_error_callback, &mut scratch, &mut r.gej, &zero.scalar, multi_callback, sp_ptr, n);
+            let i = secp256k1_ecmult_multi_var(
+                &multi_error_callback,
+                &mut scratch,
+                &mut r.gej,
+                &zero.scalar,
+                multi_callback,
+                sp_ptr,
+                n,
+            );
             if i == 0 {
                 return Err(Error::MultiMultFailed);
             }
         }
         println!("leave unsafe");
-        
+
         Ok(r)
     }
 }
@@ -591,7 +597,7 @@ mod tests {
 
         let mut sv = [x, y].to_vec();
         let mut pv = [xp, yp].to_vec();
-        
+
         let p = Point::multimult(&mut sv, &mut pv).unwrap();
 
         assert_eq!(p, x * xp + y * yp);
