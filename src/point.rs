@@ -582,18 +582,20 @@ mod tests {
     #[test]
     fn multimult() {
         let mut rng = OsRng::default();
+        let n = 1024usize;
 
-        let x = Scalar::random(&mut rng);
-        let y = Scalar::random(&mut rng);
+        let scalars: Vec<Scalar> = (0..n).map(|_| Scalar::random(&mut rng)).collect();
+        let points: Vec<Point> = (0..n)
+            .map(|_| Point::from(Scalar::random(&mut rng)))
+            .collect();
 
-        let xp = Point::from(x);
-        let yp = Point::from(x);
+        let mmp = Point::multimult(scalars.clone(), points.clone()).unwrap();
 
-        let sv = [x, y].to_vec();
-        let pv = [xp, yp].to_vec();
+        let mut ecp = Point::identity();
+        for i in 0..n {
+            ecp += scalars[i] * points[i];
+        }
 
-        let p = Point::multimult(sv, pv).unwrap();
-
-        assert_eq!(p, x * xp + y * yp);
+        assert_eq!(mmp, ecp);
     }
 }

@@ -26,6 +26,11 @@ syn = { version = "1.0.105", features = ["full"] }
 
 [dev-dependencies]
 libc = "0.2"
+criterion = "0.3"
+
+[[bench]]
+name = "point_bench"
+harness = false
 
 [lib]
 path = "src/lib.rs"    # The source file of the target.
