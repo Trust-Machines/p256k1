@@ -544,7 +544,7 @@ impl BitXor<&Scalar> for Scalar {
     type Output = Scalar;
 
     fn bitxor(self, rhs: &Scalar) -> Self::Output {
-        Scalar::square_and_multiply(&self, &rhs)
+        Scalar::square_and_multiply(&self, rhs)
     }
 }
 
@@ -552,7 +552,7 @@ impl BitXor<&Scalar> for &Scalar {
     type Output = Scalar;
 
     fn bitxor(self, rhs: &Scalar) -> Self::Output {
-        Scalar::square_and_multiply(self, &rhs)
+        Scalar::square_and_multiply(self, rhs)
     }
 }
 
