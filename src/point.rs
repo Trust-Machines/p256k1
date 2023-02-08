@@ -83,7 +83,7 @@ struct ScalarsPoints {
 }
 
 #[no_mangle]
-pub extern "C" fn ecmult_multi_callback(
+extern "C" fn ecmult_multi_callback(
     sc: *mut secp256k1_scalar,
     pt: *mut secp256k1_ge,
     idx: size_t,
