@@ -160,12 +160,12 @@ impl Point {
         }
     }
 
-    pub fn multimult(scalars: &Vec<Scalar>, points: &Vec<Point>) -> Result<Point, Error> {
+    pub fn multimult(scalars: Vec<Scalar>, points: Vec<Point>) -> Result<Point, Error> {
         let mut r = Point::new();
         let n = scalars.len() as u64;
         let mut sp = ScalarsPoints {
-            s: scalars.clone(),
-            p: points.clone(),
+            s: scalars,
+            p: points,
         };
         let sp_ptr: *mut c_void = &mut sp as *mut _ as *mut c_void;
         let error_callback_data = [0u8; 32];
@@ -589,10 +589,10 @@ mod tests {
         let xp = Point::from(x);
         let yp = Point::from(x);
 
-        let mut sv = [x, y].to_vec();
-        let mut pv = [xp, yp].to_vec();
+        let sv = [x, y].to_vec();
+        let pv = [xp, yp].to_vec();
 
-        let p = Point::multimult(&mut sv, &mut pv).unwrap();
+        let p = Point::multimult(sv, pv).unwrap();
 
         assert_eq!(p, x * xp + y * yp);
     }
