@@ -1,7 +1,7 @@
 use core::{
     cmp::{Eq, PartialEq},
-    convert::From,
-    fmt::{Debug, Display, Formatter, Result},
+    convert::{From, TryFrom},
+    fmt::{Debug, Display, Formatter, Result as FmtResult},
     hash::{Hash, Hasher},
     mem,
     ops::{Add, AddAssign, Mul, Neg, Sub},
@@ -43,6 +43,11 @@ pub const G: Point = Point {
         infinity: 0,
     },
 };
+
+pub enum ConversionError {
+    BadFieldElement,
+    BadGroupElement,
+}
 
 #[derive(Copy, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Point {
@@ -109,7 +114,7 @@ impl Default for Point {
 }
 
 impl Debug for Point {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         f.debug_struct("Point")
             .field("x", &self.gej.x)
             .field("y", &self.gej.y)
@@ -119,7 +124,7 @@ impl Debug for Point {
 }
 
 impl Display for Point {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         let c = self.clone().compress();
         write!(f, "{}", hex::encode(c.data))
     }
@@ -169,8 +174,10 @@ impl From<&Scalar> for Point {
     }
 }
 
-impl From<Compressed> for Point {
-    fn from(c: Compressed) -> Self {
+impl TryFrom<Compressed> for Point {
+    type Error = ConversionError;
+
+    fn try_from(c: Compressed) -> Result<Self, Self::Error> {
         unsafe {
             let mut y = secp256k1_ge {
                 x: secp256k1_fe { n: [0; 5] },
@@ -180,20 +187,27 @@ impl From<Compressed> for Point {
 
             let mut x = secp256k1_fe { n: [0; 5] };
 
-            let _rx = secp256k1_fe_set_b32(&mut x, &c.data[1]);
-            let _ry = secp256k1_ge_set_xo_var(
+            let rx = secp256k1_fe_set_b32(&mut x, &c.data[1]);
+            if rx == 0 {
+                return Err(ConversionError::BadFieldElement);
+            }
+
+            let ry = secp256k1_ge_set_xo_var(
                 &mut y,
                 &x,
                 (c.data[0] as u32 == SECP256K1_TAG_PUBKEY_ODD)
                     .try_into()
                     .unwrap(),
             );
+            if ry == 0 {
+                return Err(ConversionError::BadGroupElement);
+            }
 
             let mut r = Point::new();
 
             secp256k1_gej_set_ge(&mut r.gej, &y);
 
-            r
+            Ok(r)
         }
     }
 }
