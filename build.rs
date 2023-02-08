@@ -27,6 +27,7 @@ fn main() {
     base_config
         .file("secp256k1/src/secp256k1.c")
         .file("secp256k1/src/precomputed_ecmult.c")
+        .file("secp256k1/src/precomputed_ecmult_gen.c")
         .compile("libsecp256k1.a");
 
     // Tell cargo to invalidate the built crate whenever the wrapper changes
