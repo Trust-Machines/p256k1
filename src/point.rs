@@ -1,6 +1,7 @@
 use core::{
     cmp::{Eq, PartialEq},
     convert::{From, TryFrom},
+    ffi::CStr,
     fmt::{Debug, Display, Formatter, Result as FmtResult},
     hash::{Hash, Hasher},
     mem,
@@ -8,13 +9,16 @@ use core::{
     slice,
 };
 use num_traits::Zero;
+use std::os::raw::c_void;
 
 use crate::bindings::{
-    secp256k1_context, secp256k1_context_create, secp256k1_ecmult, secp256k1_fe,
+    secp256k1_callback, secp256k1_context, secp256k1_context_create, secp256k1_ecmult,
+    secp256k1_ecmult_multi_callback, secp256k1_ecmult_multi_var, secp256k1_fe,
     secp256k1_fe_get_b32, secp256k1_fe_is_odd, secp256k1_fe_normalize_var, secp256k1_fe_set_b32,
     secp256k1_ge, secp256k1_ge_set_gej, secp256k1_ge_set_xo_var, secp256k1_gej,
-    secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_gej_set_ge, SECP256K1_CONTEXT_SIGN,
-    SECP256K1_TAG_PUBKEY_EVEN, SECP256K1_TAG_PUBKEY_ODD,
+    secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_gej_set_ge, secp256k1_scalar,
+    secp256k1_scratch_space_create, secp256k1_scratch_space_destroy, size_t,
+    SECP256K1_CONTEXT_SIGN, SECP256K1_TAG_PUBKEY_EVEN, SECP256K1_TAG_PUBKEY_ODD,
 };
 
 use crate::scalar::Scalar;
@@ -44,14 +48,64 @@ pub const G: Point = Point {
     },
 };
 
+#[derive(Debug)]
 pub enum ConversionError {
     BadFieldElement,
     BadGroupElement,
 }
 
+#[derive(Debug)]
+pub enum Error {
+    MultiMultFailed,
+    Conversion(ConversionError),
+}
+
 #[derive(Copy, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Point {
     pub gej: secp256k1_gej,
+}
+
+#[no_mangle]
+extern "C" fn error_callback(
+    text: *const ::std::os::raw::c_char,
+    _data: *mut ::std::os::raw::c_void,
+) {
+    unsafe {
+        let c_str: &CStr = CStr::from_ptr(text);
+        let s: &str = c_str.to_str().unwrap();
+        println!("error_callback({s})");
+    }
+}
+
+struct ScalarsPoints {
+    s: Vec<Scalar>,
+    p: Vec<Point>,
+}
+
+#[no_mangle]
+extern "C" fn ecmult_multi_callback(
+    sc: *mut secp256k1_scalar,
+    pt: *mut secp256k1_ge,
+    idx: size_t,
+    data: *mut ::std::os::raw::c_void,
+) -> ::std::os::raw::c_int {
+    unsafe {
+        let sp: *mut ScalarsPoints = data as *mut ScalarsPoints;
+
+        let mut ge = secp256k1_ge {
+            x: secp256k1_fe { n: [0; 5] },
+            y: secp256k1_fe { n: [0; 5] },
+            infinity: 0,
+        };
+
+        let gej = &(*sp).p[idx as usize].gej as *const secp256k1_gej;
+        secp256k1_ge_set_gej(&mut ge, gej);
+
+        *sc = (*sp).s[idx as usize].scalar;
+        *pt = ge;
+    }
+
+    1
 }
 
 #[allow(dead_code)]
@@ -104,6 +158,46 @@ impl Point {
 
             c
         }
+    }
+
+    pub fn multimult(scalars: Vec<Scalar>, points: Vec<Point>) -> Result<Point, Error> {
+        let mut r = Point::new();
+        let n = scalars.len() as u64;
+        let mut sp = ScalarsPoints {
+            s: scalars,
+            p: points,
+        };
+        let sp_ptr: *mut c_void = &mut sp as *mut _ as *mut c_void;
+        let error_callback_data = [0u8; 32];
+        let error_callback_data_ptr: *const c_void =
+            &error_callback_data as *const _ as *const c_void;
+        let multi_error_callback = secp256k1_callback {
+            fn_: Some(error_callback),
+            data: error_callback_data_ptr,
+        };
+
+        let zero = Scalar::zero();
+        let ctx = Point::ctx();
+        let multi_callback: secp256k1_ecmult_multi_callback = Some(ecmult_multi_callback);
+
+        unsafe {
+            let scratch = secp256k1_scratch_space_create(ctx, 1048576);
+            let i = secp256k1_ecmult_multi_var(
+                &multi_error_callback,
+                scratch,
+                &mut r.gej,
+                &zero.scalar,
+                multi_callback,
+                sp_ptr,
+                n,
+            );
+            secp256k1_scratch_space_destroy(ctx, scratch);
+            if i == 0 {
+                return Err(Error::MultiMultFailed);
+            }
+        }
+
+        Ok(r)
     }
 }
 
@@ -175,7 +269,7 @@ impl From<&Scalar> for Point {
 }
 
 impl TryFrom<Compressed> for Point {
-    type Error = ConversionError;
+    type Error = Error;
 
     fn try_from(c: Compressed) -> Result<Self, Self::Error> {
         unsafe {
@@ -189,7 +283,7 @@ impl TryFrom<Compressed> for Point {
 
             let rx = secp256k1_fe_set_b32(&mut x, &c.data[1]);
             if rx == 0 {
-                return Err(ConversionError::BadFieldElement);
+                return Err(Error::Conversion(ConversionError::BadFieldElement));
             }
 
             let ry = secp256k1_ge_set_xo_var(
@@ -200,7 +294,7 @@ impl TryFrom<Compressed> for Point {
                     .unwrap(),
             );
             if ry == 0 {
-                return Err(ConversionError::BadGroupElement);
+                return Err(Error::Conversion(ConversionError::BadGroupElement));
             }
 
             let mut r = Point::new();
@@ -483,5 +577,25 @@ mod tests {
 
             assert_eq!(p, Point::from(x + y));
         }
+    }
+
+    #[test]
+    fn multimult() {
+        let mut rng = OsRng::default();
+        let n = 1024usize;
+
+        let scalars: Vec<Scalar> = (0..n).map(|_| Scalar::random(&mut rng)).collect();
+        let points: Vec<Point> = (0..n)
+            .map(|_| Point::from(Scalar::random(&mut rng)))
+            .collect();
+
+        let mmp = Point::multimult(scalars.clone(), points.clone()).unwrap();
+
+        let mut ecp = Point::identity();
+        for i in 0..n {
+            ecp += scalars[i] * points[i];
+        }
+
+        assert_eq!(mmp, ecp);
     }
 }
