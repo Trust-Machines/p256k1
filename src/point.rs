@@ -70,9 +70,11 @@ pub extern "C" fn error_callback(
     text: *const ::std::os::raw::c_char,
     _data: *mut ::std::os::raw::c_void,
 ) {
-    let c_str: &CStr = unsafe { CStr::from_ptr(text) };
-    let s: &str = c_str.to_str().unwrap();
-    println!("error_callback({})", s);
+    unsafe {
+        let c_str: &CStr = CStr::from_ptr(text);
+        let s: &str = c_str.to_str().unwrap();
+        println!("error_callback({s})");
+    }
 }
 
 struct ScalarsPoints {
@@ -87,7 +89,6 @@ pub extern "C" fn ecmult_multi_callback(
     idx: size_t,
     data: *mut ::std::os::raw::c_void,
 ) -> ::std::os::raw::c_int {
-    println!("ecmult_multi_callback({})", idx);
     unsafe {
         let sp: *mut ScalarsPoints = data as *mut ScalarsPoints;
 
@@ -195,7 +196,6 @@ impl Point {
                 return Err(Error::MultiMultFailed);
             }
         }
-        println!("leave unsafe");
 
         Ok(r)
     }
