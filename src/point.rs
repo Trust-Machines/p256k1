@@ -1,6 +1,7 @@
 use core::{
     cmp::{Eq, PartialEq},
     convert::{From, TryFrom},
+    ffi::CStr,
     fmt::{Debug, Display, Formatter, Result as FmtResult},
     hash::{Hash, Hasher},
     mem,
@@ -63,6 +64,16 @@ pub struct Point {
 }
 
 #[no_mangle]
+pub extern "C" fn error_callback(
+    text: *const ::std::os::raw::c_char,
+    _data: *mut ::std::os::raw::c_void,
+) {
+    let c_str: &CStr = unsafe { CStr::from_ptr(text) };
+    let s: &str = c_str.to_str().unwrap();
+    println!("error_callback({})", s);
+}
+
+#[no_mangle]
 pub extern "C" fn ecmult_multi_callback(
     sc: *mut secp256k1_scalar,
     pt: *mut secp256k1_ge,
@@ -70,7 +81,8 @@ pub extern "C" fn ecmult_multi_callback(
     data: *mut ::std::os::raw::c_void,
 ) -> ::std::os::raw::c_int {
     // data points to a (&mut Scalars, &mut Points)
-    println!("ecmult_multi_callback({} {:?})", idx, data);
+    //println!("ecmult_multi_callback({} {:?})", idx, data);
+    println!("ecmult_multi_callback({})", idx);
     0
 }
 
@@ -133,8 +145,8 @@ impl Point {
         let sp_ptr: *mut c_void = &mut sp as *mut _ as *mut c_void;
         let error_callback_data = [0u8; 32];
         let error_callback_data_ptr: *const c_void = &error_callback_data as *const _ as *const c_void;
-        let error_callback = secp256k1_callback{
-            fn_: None,
+        let multi_error_callback = secp256k1_callback{
+            fn_: Some(error_callback),
             data: error_callback_data_ptr,
         };
 
@@ -148,15 +160,16 @@ impl Point {
             alloc_size: scratch_data.len() as u64,
         };
 
-        let callback: secp256k1_ecmult_multi_callback =
+        let multi_callback: secp256k1_ecmult_multi_callback =
             Some(ecmult_multi_callback);
-
+        println!("enter unsafe");
         unsafe {
-            let i = secp256k1_ecmult_multi_var(&error_callback, &mut scratch, &mut r.gej, &zero.scalar, callback, sp_ptr, n);
+            let i = secp256k1_ecmult_multi_var(&multi_error_callback, &mut scratch, &mut r.gej, &zero.scalar, multi_callback, sp_ptr, n);
             if i == 0 {
                 return Err(Error::MultiMultFailed);
             }
         }
+        println!("leave unsafe");
         
         Ok(r)
     }
