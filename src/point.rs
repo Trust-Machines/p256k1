@@ -73,6 +73,11 @@ pub extern "C" fn error_callback(
     println!("error_callback({})", s);
 }
 
+struct ScalarsPoints {
+    s: Vec<Scalar>,
+    p: Vec<Point>,
+}
+
 #[no_mangle]
 pub extern "C" fn ecmult_multi_callback(
     sc: *mut secp256k1_scalar,
@@ -83,7 +88,25 @@ pub extern "C" fn ecmult_multi_callback(
     // data points to a (&mut Scalars, &mut Points)
     //println!("ecmult_multi_callback({} {:?})", idx, data);
     println!("ecmult_multi_callback({})", idx);
-    0
+    unsafe {
+        let sp: *mut ScalarsPoints = data as *mut ScalarsPoints;
+
+        let mut ge = secp256k1_ge {
+            x: secp256k1_fe { n: [0; 5] },
+            y: secp256k1_fe { n: [0; 5] },
+            infinity: 0,
+        };
+
+        let p: *const secp256k1_gej = &(*sp).p[idx as usize].gej as *const _ as *const secp256k1_gej;
+        let s: *const secp256k1_scalar = &(*sp).s[idx as usize].scalar as *const _ as *const secp256k1_scalar;
+        
+        secp256k1_ge_set_gej(&mut ge, p);
+
+        *sc = *s;
+        *pt = ge;
+    }
+
+    1
 }
 
 #[allow(dead_code)]
@@ -138,10 +161,13 @@ impl Point {
         }
     }
 
-    pub fn multimult(scalars: &mut Vec<Scalar>, points: &mut Vec<Point>) -> Result<Point, Error> {
+    pub fn multimult(scalars: &Vec<Scalar>, points: &Vec<Point>) -> Result<Point, Error> {
         let mut r = Point::new();
         let n = scalars.len() as u64;
-        let mut sp = (scalars, points);
+        let mut sp = ScalarsPoints{
+            s: scalars.clone(),
+            p: points.clone(),
+        };
         let sp_ptr: *mut c_void = &mut sp as *mut _ as *mut c_void;
         let error_callback_data = [0u8; 32];
         let error_callback_data_ptr: *const c_void = &error_callback_data as *const _ as *const c_void;
