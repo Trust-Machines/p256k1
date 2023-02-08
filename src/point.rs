@@ -14,7 +14,7 @@ use crate::bindings::{
     secp256k1_callback, secp256k1_context, secp256k1_context_create, secp256k1_ecmult, secp256k1_ecmult_multi_callback, secp256k1_ecmult_multi_var, secp256k1_fe,
     secp256k1_fe_get_b32, secp256k1_fe_is_odd, secp256k1_fe_normalize_var, secp256k1_fe_set_b32,
     secp256k1_ge, secp256k1_ge_set_gej, secp256k1_ge_set_xo_var, secp256k1_gej,
-    secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_gej_set_ge, secp256k1_scratch, SECP256K1_CONTEXT_SIGN,
+    secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_gej_set_ge, secp256k1_scalar, secp256k1_scratch, size_t, SECP256K1_CONTEXT_SIGN,
     SECP256K1_TAG_PUBKEY_EVEN, SECP256K1_TAG_PUBKEY_ODD,
 };
 
@@ -45,14 +45,33 @@ pub const G: Point = Point {
     },
 };
 
+#[derive(Debug)]
 pub enum ConversionError {
     BadFieldElement,
     BadGroupElement,
 }
 
+#[derive(Debug)]
+pub enum Error {
+    MultiMultFailed,
+    Conversion(ConversionError),
+}
+
 #[derive(Copy, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Point {
     pub gej: secp256k1_gej,
+}
+
+#[no_mangle]
+pub extern "C" fn ecmult_multi_callback(
+    sc: *mut secp256k1_scalar,
+    pt: *mut secp256k1_ge,
+    idx: size_t,
+    data: *mut ::std::os::raw::c_void,
+) -> ::std::os::raw::c_int {
+    // data points to a (&mut Scalars, &mut Points)
+    println!("ecmult_multi_callback({} {:?})", idx, data);
+    0
 }
 
 #[allow(dead_code)]
@@ -106,35 +125,43 @@ impl Point {
             c
         }
     }
-    /*
-    pub fn multimult(scalars: Vec<Scalar>, points: Vec<Point>) -> Point {
+
+    pub fn multimult(scalars: &mut Vec<Scalar>, points: &mut Vec<Point>) -> Result<Point, Error> {
         let mut r = Point::new();
+        let n = scalars.len() as u64;
         let mut sp = (scalars, points);
         let sp_ptr: *mut c_void = &mut sp as *mut _ as *mut c_void;
-
-        let null = std::ptr::null_mut::<secp256k1_fe>();
+        let error_callback_data = [0u8; 32];
+        let error_callback_data_ptr: *const c_void = &error_callback_data as *const _ as *const c_void;
         let error_callback = secp256k1_callback{
             fn_: None,
-            data: null,
+            data: error_callback_data_ptr,
         };
 
         let zero = Scalar::zero();
-        let scratch_data = [0u8; 16384];
-        let scratch = secp256k1_scratch{
+        let mut scratch_data = [0u8; 16384];
+        let scratch_data_ptr: *mut c_void = &mut scratch_data as *mut _ as *mut c_void;
+        let mut scratch = secp256k1_scratch{
             magic: [0u8; 8],
-            data: &mut scratch_data,
+            data: scratch_data_ptr,
             max_size: scratch_data.len() as u64,
             alloc_size: scratch_data.len() as u64,
         };
 
+        let callback: secp256k1_ecmult_multi_callback =
+            Some(ecmult_multi_callback);
+
         unsafe {
-            let i = secp256k1_ecmult_multi_var(&error_callback, &mut scratch, &mut r.gej, &zero.scalar, None, sp_ptr, scalars.len() as u64);
+            let i = secp256k1_ecmult_multi_var(&error_callback, &mut scratch, &mut r.gej, &zero.scalar, callback, sp_ptr, n);
+            if i == 0 {
+                return Err(Error::MultiMultFailed);
+            }
         }
         
-        r
+        Ok(r)
     }
 }
-*/
+
 impl Default for Point {
     fn default() -> Self {
         Point::identity()
@@ -203,7 +230,7 @@ impl From<&Scalar> for Point {
 }
 
 impl TryFrom<Compressed> for Point {
-    type Error = ConversionError;
+    type Error = Error;
 
     fn try_from(c: Compressed) -> Result<Self, Self::Error> {
         unsafe {
@@ -217,7 +244,7 @@ impl TryFrom<Compressed> for Point {
 
             let rx = secp256k1_fe_set_b32(&mut x, &c.data[1]);
             if rx == 0 {
-                return Err(ConversionError::BadFieldElement);
+                return Err(Error::Conversion(ConversionError::BadFieldElement));
             }
 
             let ry = secp256k1_ge_set_xo_var(
@@ -228,7 +255,7 @@ impl TryFrom<Compressed> for Point {
                     .unwrap(),
             );
             if ry == 0 {
-                return Err(ConversionError::BadGroupElement);
+                return Err(Error::Conversion(ConversionError::BadGroupElement));
             }
 
             let mut r = Point::new();
@@ -511,5 +538,23 @@ mod tests {
 
             assert_eq!(p, Point::from(x + y));
         }
+    }
+
+    #[test]
+    fn multimult() {
+        let mut rng = OsRng::default();
+
+        let x = Scalar::random(&mut rng);
+        let y = Scalar::random(&mut rng);
+
+        let xp = Point::from(x);
+        let yp = Point::from(x);
+
+        let mut sv = [x, y].to_vec();
+        let mut pv = [xp, yp].to_vec();
+        
+        let p = Point::multimult(&mut sv, &mut pv).unwrap();
+
+        assert_eq!(p, x * xp + y * yp);
     }
 }
