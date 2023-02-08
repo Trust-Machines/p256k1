@@ -8,12 +8,13 @@ use core::{
     slice,
 };
 use num_traits::Zero;
+use std::os::raw::c_void;
 
 use crate::bindings::{
-    secp256k1_context, secp256k1_context_create, secp256k1_ecmult, secp256k1_fe,
+    secp256k1_callback, secp256k1_context, secp256k1_context_create, secp256k1_ecmult, secp256k1_ecmult_multi_callback, secp256k1_ecmult_multi_var, secp256k1_fe,
     secp256k1_fe_get_b32, secp256k1_fe_is_odd, secp256k1_fe_normalize_var, secp256k1_fe_set_b32,
     secp256k1_ge, secp256k1_ge_set_gej, secp256k1_ge_set_xo_var, secp256k1_gej,
-    secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_gej_set_ge, SECP256K1_CONTEXT_SIGN,
+    secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_gej_set_ge, secp256k1_scratch, SECP256K1_CONTEXT_SIGN,
     SECP256K1_TAG_PUBKEY_EVEN, SECP256K1_TAG_PUBKEY_ODD,
 };
 
@@ -105,8 +106,35 @@ impl Point {
             c
         }
     }
-}
+    /*
+    pub fn multimult(scalars: Vec<Scalar>, points: Vec<Point>) -> Point {
+        let mut r = Point::new();
+        let mut sp = (scalars, points);
+        let sp_ptr: *mut c_void = &mut sp as *mut _ as *mut c_void;
 
+        let null = std::ptr::null_mut::<secp256k1_fe>();
+        let error_callback = secp256k1_callback{
+            fn_: None,
+            data: null,
+        };
+
+        let zero = Scalar::zero();
+        let scratch_data = [0u8; 16384];
+        let scratch = secp256k1_scratch{
+            magic: [0u8; 8],
+            data: &mut scratch_data,
+            max_size: scratch_data.len() as u64,
+            alloc_size: scratch_data.len() as u64,
+        };
+
+        unsafe {
+            let i = secp256k1_ecmult_multi_var(&error_callback, &mut scratch, &mut r.gej, &zero.scalar, None, sp_ptr, scalars.len() as u64);
+        }
+        
+        r
+    }
+}
+*/
 impl Default for Point {
     fn default() -> Self {
         Point::identity()
