@@ -66,7 +66,7 @@ pub struct Point {
 }
 
 #[no_mangle]
-pub extern "C" fn error_callback(
+extern "C" fn error_callback(
     text: *const ::std::os::raw::c_char,
     _data: *mut ::std::os::raw::c_void,
 ) {
