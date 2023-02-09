@@ -61,6 +61,9 @@ pub enum Error {
 }
 
 #[derive(Copy, Clone, serde::Serialize, serde::Deserialize)]
+/**
+Point is a wrapper around libsecp256k1's internal secp256k1_gej struct.  It provides a point on the secp256k1 curve in Jacobian coordinates.  This allows for extremely fast curve point operations, and avoids expensive conversions from byte buffers.
+ */
 pub struct Point {
     pub gej: secp256k1_gej,
 }

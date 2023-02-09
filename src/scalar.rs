@@ -20,6 +20,9 @@ use crate::bindings::{
 use crate::point::Point;
 
 #[derive(Copy, Clone, Debug, serde::Serialize, serde::Deserialize)]
+/**
+Scalar is a wrapper around libsecp256k1's internal secp256k1_scalar struct.  It provides a scalar modulo the group order.  Storing scalars in this format avoids unnecessary conversions from byte bffers, which provides a significant performance enhancement.
+ */
 pub struct Scalar {
     pub scalar: secp256k1_scalar,
 }
