@@ -1,13 +1,11 @@
 [package]
 name = "p256k1"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2021"
 license = "Apache-2.0"
 description = "Rust wrappers around libsecp256k1 which expose internal scalar and point APIs"
 readme = "README.md"
 repository = "https://github.com/Trust-Machines/p256k1/"
-homepage = "https://p256k1.pages.dev/"
-documentation = "https://p256k1.pages.dev/p256k1/"
 keywords = ["cryptography", "crypto", "secp256k1"]
 categories = ["api-bindings", "cryptography", "mathematics"]
 
