@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::env;
 use std::iter::FromIterator;
 
 use itertools::Itertools;
@@ -49,7 +50,7 @@ fn main() {
         // Unwrap the Result and panic on failure.
         .expect("Unable to generate bindings");
 
-    let bindings_file = "src/bindings.rs";
+    let bindings_file = &format!("{}/bindings.rs", env::var("OUT_DIR").unwrap());
 
     // Write the bindings to the $OUT_DIR/bindings.rs file.
     bindings
