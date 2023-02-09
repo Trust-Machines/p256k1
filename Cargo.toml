@@ -2,6 +2,12 @@
 name = "p256k1"
 version = "1.0.0"
 edition = "2021"
+license = "Apache-2.0"
+description = "Rust wrappers around libsecp256k1 which expose internal scalar and point APIs"
+readme = "README.md"
+repository = "https://github.com/Trust-Machines/p256k1/"
+homepage = "https://p256k1.pages.dev/"
+documentation = "https://p256k1.pages.dev/p256k1/"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
