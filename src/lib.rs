@@ -1,3 +1,6 @@
+#![deny(missing_docs)]
+#![doc = include_str!("../README.md")]
+
 #[allow(non_snake_case)]
 #[allow(non_camel_case_types)]
 #[allow(unused_variables)]
@@ -11,5 +14,8 @@ mod bindings {
     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 }
 
+/// Point operations on the secp256k1 curve
 pub mod point;
+
+/// Scalar arithmetic modulo the group order
 pub mod scalar;

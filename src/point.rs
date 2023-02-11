@@ -23,6 +23,7 @@ use crate::bindings::{
 
 use crate::scalar::Scalar;
 
+/// The secp256k1 base point
 pub const G: Point = Point {
     gej: secp256k1_gej {
         x: secp256k1_fe {
@@ -49,14 +50,20 @@ pub const G: Point = Point {
 };
 
 #[derive(Debug)]
+/// Errors when decompressing points
 pub enum ConversionError {
+    /// Error decompressing a point into a field element
     BadFieldElement,
+    /// Error decompressing a point into a group element
     BadGroupElement,
 }
 
 #[derive(Debug)]
+/// Errors in point operations
 pub enum Error {
+    /// Error doing multi-exponentiation
     MultiMultFailed,
+    /// Error decompressing a point
     Conversion(ConversionError),
 }
 
@@ -65,6 +72,7 @@ pub enum Error {
 Point is a wrapper around libsecp256k1's internal secp256k1_gej struct.  It provides a point on the secp256k1 curve in Jacobian coordinates.  This allows for extremely fast curve point operations, and avoids expensive conversions from byte buffers.
  */
 pub struct Point {
+    /// A point on the secp256k1 curve in Jacobian coordinates
     pub gej: secp256k1_gej,
 }
 
@@ -113,10 +121,12 @@ extern "C" fn ecmult_multi_callback(
 
 #[allow(dead_code)]
 impl Point {
+    /// Construct a new point
     pub fn new() -> Self {
         Self::identity()
     }
 
+    /// Construct an identity point
     pub fn identity() -> Self {
         Self {
             gej: secp256k1_gej {
@@ -128,6 +138,7 @@ impl Point {
         }
     }
 
+    // Return a context object for the wrapped libsecp256k1
     pub fn ctx() -> *const secp256k1_context {
         unsafe { secp256k1_context_create(SECP256K1_CONTEXT_SIGN) }
     }
