@@ -1,7 +1,8 @@
 [package]
 name = "p256k1"
-version = "1.0.2"
+version = "1.0.3"
 edition = "2021"
+authors = ["Joey Yandle <xoloki@gmail.com>"]
 license = "Apache-2.0"
 description = "Rust wrappers around libsecp256k1 which expose internal scalar and point APIs"
 readme = "README.md"

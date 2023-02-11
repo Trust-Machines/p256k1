@@ -15,15 +15,20 @@ To import `p256k1`, add the following to the dependencies section of
 your project's `Cargo.toml`:
 ```toml
 p256k1 = "1"
+```
 
 # Dependencies
 Stable rust with a working cargo.  Also need llvm to build secp256k1 and link the wrappers.
 
 ## Ubuntu
 
-```$ apt install llvm```
+```shell
+$ apt install llvm
+```
 
 ## MacOS with brew
 After installing llvm, be sure to follow the instructions on updating .zshrc so llvm can be used by the build system.
 
-```$ brew install llvm```
+```shell
+$ brew install llvm
+```
