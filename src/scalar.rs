@@ -24,16 +24,19 @@ use crate::point::Point;
 Scalar is a wrapper around libsecp256k1's internal secp256k1_scalar struct.  It provides a scalar modulo the group order.  Storing scalars in this format avoids unnecessary conversions from byte bffers, which provides a significant performance enhancement.
  */
 pub struct Scalar {
+    /// The wrapped libsecp256k1 scalar
     pub scalar: secp256k1_scalar,
 }
 
 impl Scalar {
+    /// Construct a zero scalar
     pub fn new() -> Self {
         Self {
             scalar: secp256k1_scalar { d: [0; 4] },
         }
     }
 
+    /// Construct a random scalar
     pub fn random<T: RngCore + CryptoRng>(rng: &mut T) -> Self {
         let mut bytes: [u8; 32] = [0; 32];
 
@@ -42,12 +45,14 @@ impl Scalar {
         Scalar::from(bytes)
     }
 
+    /// Set the scalar to the passed integer
     pub fn set_int(&mut self, i: u32) {
         unsafe {
             secp256k1_scalar_set_int(&mut self.scalar, i);
         }
     }
 
+    /// Return the multiplicative inverse of this scalar
     pub fn invert(&self) -> Scalar {
         let mut r = Scalar::new();
 
@@ -58,6 +63,7 @@ impl Scalar {
         r
     }
 
+    /// Return a byte slice of the scalar's data
     pub fn as_bytes(&self) -> &[u8] {
         let up: *const u64 = self.scalar.d.as_ptr();
         let bp: *const u8 = up as *const u8;
@@ -66,6 +72,7 @@ impl Scalar {
         bs
     }
 
+    /// Fast exponentiation using the square and multiply algorithm
     pub fn square_and_multiply(x: &Scalar, n: &Scalar) -> Scalar {
         let mut ret = Scalar::one();
         let mut square = *x;
@@ -83,6 +90,7 @@ impl Scalar {
         ret
     }
 
+    /// Fast exponentiation using the square and multiply algorithm
     pub fn square_and_multiply_usize(x: &Scalar, n: usize) -> Scalar {
         let mut ret = Scalar::one();
         let mut square = *x;
@@ -113,6 +121,7 @@ impl Scalar {
         ret
     }
 
+    /// Fast exponentiation using the square and multiply algorithm
     pub fn square_and_multiply_u32(x: &Scalar, n: u32) -> Scalar {
         let mut ret = Scalar::one();
         let mut square = *x;
