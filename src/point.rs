@@ -72,7 +72,7 @@ pub enum Error {
 Point is a wrapper around libsecp256k1's internal secp256k1_gej struct.  It provides a point on the secp256k1 curve in Jacobian coordinates.  This allows for extremely fast curve point operations, and avoids expensive conversions from byte buffers.
  */
 pub struct Point {
-    /// A point on the secp256k1 curve in Jacobian coordinates
+    /// The wrapped libsecp256k1 point
     pub gej: secp256k1_gej,
 }
 
@@ -138,16 +138,18 @@ impl Point {
         }
     }
 
-    // Return a context object for the wrapped libsecp256k1
+    /// Return a context object for the wrapped libsecp256k1
     pub fn ctx() -> *const secp256k1_context {
         unsafe { secp256k1_context_create(SECP256K1_CONTEXT_SIGN) }
     }
 
     #[allow(non_snake_case)]
+    /// Return the base point
     pub fn G() -> Point {
         Point::from(Scalar::from(1))
     }
 
+    /// Convert the point into compressed binary format
     pub fn compress(&self) -> Compressed {
         unsafe {
             let mut ge = secp256k1_ge {
@@ -174,6 +176,7 @@ impl Point {
         }
     }
 
+    /// Perform a multi-exponentiation operation on the passed scalars and points, using the Pipperger algorithm
     pub fn multimult(scalars: Vec<Scalar>, points: Vec<Point>) -> Result<Point, Error> {
         let mut r = Point::new();
         let n = scalars.len() as u64;
@@ -483,11 +486,13 @@ impl Zero for Point {
     }
 }
 
+/// A Point in compressed binary format
 pub struct Compressed {
     data: [u8; 33],
 }
 
 impl Compressed {
+    /// Return a byte slice of the data
     pub fn as_bytes(&self) -> &[u8] {
         let up: *const u8 = self.data.as_ptr();
         #[allow(clippy::size_of_in_element_count)]
