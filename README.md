@@ -21,13 +21,9 @@ Stable rust with a working cargo.  Also need llvm to build secp256k1 and link th
 
 ## Ubuntu
 
-```
-$ apt install llvm
-```
+```$ apt install llvm```
 
 ## MacOS with brew
 After installing llvm, be sure to follow the instructions on updating .zshrc so llvm can be used by the build system.
 
-```
-$ brew install llvm
-```
+```$ brew install llvm```
