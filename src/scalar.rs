@@ -2,7 +2,7 @@ use base58::{FromBase58, FromBase58Error, ToBase58};
 use bitvec::prelude::*;
 use core::{
     cmp::{Eq, PartialEq},
-    convert::{From, Into, TryFrom},
+    convert::{From, TryFrom},
     fmt::{Debug, Display, Formatter, Result as FmtResult},
     hash::{Hash, Hasher},
     ops::{Add, AddAssign, BitXor, Div, DivAssign, Mul, MulAssign, Neg, Sub},
@@ -246,9 +246,9 @@ impl TryFrom<&str> for Scalar {
     }
 }
 
-impl Into<String> for Scalar {
-    fn into(self) -> String {
-        self.to_bytes().to_base58()
+impl From<Scalar> for String {
+    fn from(s: Scalar) -> String {
+        s.to_bytes().to_base58()
     }
 }
 

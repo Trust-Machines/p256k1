@@ -1,7 +1,7 @@
 use base58::{FromBase58, FromBase58Error, ToBase58};
 use core::{
     cmp::{Eq, PartialEq},
-    convert::{From, Into, TryFrom},
+    convert::{From, TryFrom},
     ffi::CStr,
     fmt::{Debug, Display, Formatter, Result as FmtResult},
     hash::{Hash, Hasher},
@@ -513,9 +513,9 @@ impl From<[u8; 33]> for Compressed {
     }
 }
 
-impl Into<String> for Compressed {
-    fn into(self) -> String {
-        self.data.to_base58()
+impl From<Compressed> for String {
+    fn from(c: Compressed) -> String {
+        c.data.to_base58()
     }
 }
 
