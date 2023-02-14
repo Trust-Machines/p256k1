@@ -1,23 +1,38 @@
+use base58::{FromBase58, FromBase58Error, ToBase58};
 use bitvec::prelude::*;
 use core::{
     cmp::{Eq, PartialEq},
-    convert::From,
-    fmt::{Debug, Display, Formatter, Result},
+    convert::{From, Into, TryFrom},
+    fmt::{Debug, Display, Formatter, Result as FmtResult},
     hash::{Hash, Hasher},
-    mem,
     ops::{Add, AddAssign, BitXor, Div, DivAssign, Mul, MulAssign, Neg, Sub},
-    slice,
 };
 use num_traits::{One, Zero};
 use rand_core::{CryptoRng, RngCore};
 
 use crate::bindings::{
     secp256k1_ecmult, secp256k1_scalar, secp256k1_scalar_add, secp256k1_scalar_eq,
-    secp256k1_scalar_inverse, secp256k1_scalar_mul, secp256k1_scalar_negate,
-    secp256k1_scalar_set_b32, secp256k1_scalar_set_int,
+    secp256k1_scalar_get_b32, secp256k1_scalar_inverse, secp256k1_scalar_mul,
+    secp256k1_scalar_negate, secp256k1_scalar_set_b32, secp256k1_scalar_set_int,
 };
 
 use crate::point::Point;
+
+#[derive(Debug)]
+/// Errors when converting scalars
+pub enum ConversionError {
+    /// Error converting a byte slice into Scalar
+    WrongNumberOfBytes(usize),
+    /// Error converting a base58 string to bytes
+    Base58(FromBase58Error),
+}
+
+#[derive(Debug)]
+/// Errors in scalar operations
+pub enum Error {
+    /// Error converting a scalar
+    Conversion(ConversionError),
+}
 
 #[derive(Copy, Clone, Debug, serde::Serialize, serde::Deserialize)]
 /**
@@ -63,22 +78,25 @@ impl Scalar {
         r
     }
 
-    /// Return a byte slice of the scalar's data
-    pub fn as_bytes(&self) -> &[u8] {
-        let up: *const u64 = self.scalar.d.as_ptr();
-        let bp: *const u8 = up as *const u8;
-        let bs: &[u8] = unsafe { slice::from_raw_parts(bp, mem::size_of::<u64>() * 4) };
+    /// Return a byte array of the scalar's data in big endian
+    pub fn to_bytes(&self) -> [u8; 32] {
+        let mut bytes = [0u8; 32];
 
-        bs
+        unsafe {
+            secp256k1_scalar_get_b32(bytes.as_mut_ptr(), &self.scalar);
+        }
+
+        bytes
     }
 
     /// Fast exponentiation using the square and multiply algorithm
     pub fn square_and_multiply(x: &Scalar, n: &Scalar) -> Scalar {
         let mut ret = Scalar::one();
         let mut square = *x;
+        let bytes = n.to_bytes();
 
-        for byte in n.as_bytes() {
-            let bits = byte.view_bits::<Lsb0>();
+        for i in 0..bytes.len() {
+            let bits = bytes[31 - i].view_bits::<Lsb0>();
             for bit in bits {
                 if *bit {
                     ret *= square;
@@ -160,8 +178,8 @@ impl Default for Scalar {
 }
 
 impl Display for Scalar {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        write!(f, "{}", hex::encode(self.as_bytes()))
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        write!(f, "{}", self.to_bytes().to_base58())
     }
 }
 
@@ -175,7 +193,7 @@ impl Eq for Scalar {}
 
 impl Hash for Scalar {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        state.write(self.as_bytes());
+        state.write(&self.to_bytes()[..]);
     }
 }
 
@@ -200,6 +218,37 @@ impl From<[u8; 32]> for Scalar {
         }
 
         s
+    }
+}
+
+impl TryFrom<&[u8]> for Scalar {
+    type Error = Error;
+    fn try_from(bytes: &[u8]) -> Result<Self, Error> {
+        match bytes.len() {
+            32 => {
+                let mut data = [0u8; 32];
+
+                data.clone_from_slice(bytes);
+                Ok(Scalar::from(data))
+            }
+            n => Err(Error::Conversion(ConversionError::WrongNumberOfBytes(n))),
+        }
+    }
+}
+
+impl TryFrom<&str> for Scalar {
+    type Error = Error;
+    fn try_from(s: &str) -> Result<Self, Error> {
+        match s.from_base58() {
+            Ok(bytes) => Scalar::try_from(&bytes[..]),
+            Err(e) => Err(Error::Conversion(ConversionError::Base58(e))),
+        }
+    }
+}
+
+impl Into<String> for Scalar {
+    fn into(self) -> String {
+        self.to_bytes().to_base58()
     }
 }
 
@@ -588,7 +637,7 @@ mod tests {
     fn from() {
         for x in 0..0xff {
             let s = Scalar::from(x);
-            assert_eq!(s.as_bytes()[0], x as u8);
+            assert_eq!(s.to_bytes()[31], x as u8);
         }
     }
 
@@ -715,5 +764,19 @@ mod tests {
             let klhs = (0..k).fold(Scalar::one(), |s, _| s * x);
             assert_eq!(klhs, x ^ ks);
         }
+    }
+
+    #[test]
+    fn base58() {
+        let mut rng = OsRng::default();
+        let a = Scalar::random(&mut rng);
+        let s = format!("{}", &a);
+        let b = Scalar::try_from(s.as_str()).unwrap();
+        let t: String = a.into();
+        let c = Scalar::try_from(t.as_str()).unwrap();
+
+        assert_eq!(a, b);
+        assert_eq!(a, c);
+        assert_eq!(s, t);
     }
 }
