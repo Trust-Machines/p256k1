@@ -1,6 +1,6 @@
 [package]
 name = "p256k1"
-version = "1.0.3"
+version = "1.0.4"
 edition = "2021"
 authors = ["Joey Yandle <xoloki@gmail.com>"]
 license = "Apache-2.0"
@@ -13,6 +13,7 @@ categories = ["api-bindings", "cryptography", "mathematics"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+base58 = "0.2"
 bitvec = "1.0.1"
 hex = "0.4"
 num-traits = "0.2"

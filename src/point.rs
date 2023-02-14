@@ -1,3 +1,4 @@
+use base58::{FromBase58, FromBase58Error, ToBase58};
 use core::{
     cmp::{Eq, PartialEq},
     convert::{From, TryFrom},
@@ -50,12 +51,16 @@ pub const G: Point = Point {
 };
 
 #[derive(Debug)]
-/// Errors when decompressing points
+/// Errors when converting points
 pub enum ConversionError {
     /// Error decompressing a point into a field element
     BadFieldElement,
     /// Error decompressing a point into a group element
     BadGroupElement,
+    /// Error converting a byte slice into Compressed
+    WrongNumberOfBytes(usize),
+    /// Error converting a base58 string to bytes
+    Base58(FromBase58Error),
 }
 
 #[derive(Debug)]
@@ -237,7 +242,7 @@ impl Debug for Point {
 impl Display for Point {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         let c = self.clone().compress();
-        write!(f, "{}", hex::encode(c.data))
+        write!(f, "{}", c.data.to_base58())
     }
 }
 
@@ -285,10 +290,10 @@ impl From<&Scalar> for Point {
     }
 }
 
-impl TryFrom<Compressed> for Point {
+impl TryFrom<&Compressed> for Point {
     type Error = Error;
 
-    fn try_from(c: Compressed) -> Result<Self, Self::Error> {
+    fn try_from(c: &Compressed) -> Result<Self, Self::Error> {
         unsafe {
             let mut y = secp256k1_ge {
                 x: secp256k1_fe { n: [0; 5] },
@@ -508,12 +513,34 @@ impl From<[u8; 33]> for Compressed {
     }
 }
 
-impl From<&[u8]> for Compressed {
-    fn from(bytes: &[u8]) -> Self {
-        let mut r = Compressed { data: [0; 33] };
+impl From<Compressed> for String {
+    fn from(c: Compressed) -> String {
+        c.data.to_base58()
+    }
+}
 
-        r.data.clone_from_slice(bytes);
-        r
+impl TryFrom<&[u8]> for Compressed {
+    type Error = Error;
+    fn try_from(bytes: &[u8]) -> Result<Self, Error> {
+        match bytes.len() {
+            33 => {
+                let mut r = Compressed { data: [0; 33] };
+
+                r.data.clone_from_slice(bytes);
+                Ok(r)
+            }
+            n => Err(Error::Conversion(ConversionError::WrongNumberOfBytes(n))),
+        }
+    }
+}
+
+impl TryFrom<&str> for Compressed {
+    type Error = Error;
+    fn try_from(s: &str) -> Result<Self, Error> {
+        match s.from_base58() {
+            Ok(bytes) => Compressed::try_from(&bytes[..]),
+            Err(e) => Err(Error::Conversion(ConversionError::Base58(e))),
+        }
     }
 }
 
@@ -616,5 +643,21 @@ mod tests {
         }
 
         assert_eq!(mmp, ecp);
+    }
+
+    #[test]
+    fn base58() {
+        let mut rng = OsRng::default();
+        let a = Point::from(Scalar::random(&mut rng));
+        let s = format!("{}", &a);
+        let c = Compressed::try_from(s.as_str()).unwrap();
+        let b = Point::try_from(&c).unwrap();
+        let t: String = c.into();
+        let d = Compressed::try_from(t.as_str()).unwrap();
+        let e = Point::try_from(&d).unwrap();
+
+        assert_eq!(a, b);
+        assert_eq!(a, e);
+        assert_eq!(s, t);
     }
 }
