@@ -13,7 +13,7 @@
 
 To import `p256k1`, add the following to the dependencies section of your project's `Cargo.toml`:
 ```toml
-p256k1 = "1"
+p256k1 = "2"
 ```
 
 ## Dependencies
