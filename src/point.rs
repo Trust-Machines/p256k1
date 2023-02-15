@@ -258,7 +258,7 @@ impl Eq for Point {}
 
 impl Hash for Point {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        state.write(self.compress().as_bytes());
+        state.write(&self.compress().data[..]);
     }
 }
 
