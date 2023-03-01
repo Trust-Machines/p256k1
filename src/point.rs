@@ -21,8 +21,7 @@ use crate::bindings::{
     secp256k1_scratch_space_destroy, size_t, SECP256K1_TAG_PUBKEY_EVEN, SECP256K1_TAG_PUBKEY_ODD,
 };
 
-use crate::context::Context;
-use crate::scalar::Scalar;
+use crate::{context::Context, field, scalar::Scalar};
 
 /// The secp256k1 base point
 pub const G: Point = Point {
@@ -254,6 +253,33 @@ impl Eq for Point {}
 impl Hash for Point {
     fn hash<H: Hasher>(&self, state: &mut H) {
         state.write(&self.compress().data[..]);
+    }
+}
+
+impl From<(Scalar, Scalar)> for Point {
+    fn from(ss: (Scalar, Scalar)) -> Self {
+        let x = field::Element::from(ss.0);
+        let y = field::Element::from(ss.0);
+
+        Self::from((x, y))
+    }
+}
+
+impl From<(field::Element, field::Element)> for Point {
+    fn from(ff: (field::Element, field::Element)) -> Self {
+        unsafe {
+            let ge = secp256k1_ge {
+                x: ff.0.fe,
+                y: ff.1.fe,
+                infinity: 0,
+            };
+
+            let mut r = Point::new();
+
+            secp256k1_gej_set_ge(&mut r.gej, &ge);
+
+            r
+        }
     }
 }
 

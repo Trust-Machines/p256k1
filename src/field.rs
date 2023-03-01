@@ -16,7 +16,7 @@ use crate::bindings::{
     secp256k1_fe_set_b32, secp256k1_fe_set_int,
 };
 
-//use crate::{point::Point, scalar::Scalar};
+use crate::scalar::Scalar;
 
 #[derive(Debug)]
 /// Errors when converting field elements
@@ -118,6 +118,13 @@ impl Eq for Element {}
 impl Hash for Element {
     fn hash<H: Hasher>(&self, state: &mut H) {
         state.write(&self.to_bytes()[..]);
+    }
+}
+
+impl From<Scalar> for Element {
+    fn from(x: Scalar) -> Self {
+        let bytes = x.to_bytes();
+        Self::from(bytes)
     }
 }
 
