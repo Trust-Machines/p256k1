@@ -12,8 +12,8 @@ use rand_core::{CryptoRng, RngCore};
 
 use crate::bindings::{
     secp256k1_fe, secp256k1_fe_add, secp256k1_fe_cmp_var, secp256k1_fe_get_b32, secp256k1_fe_inv,
-    secp256k1_fe_mul, secp256k1_fe_negate, secp256k1_fe_normalize, secp256k1_fe_set_b32,
-    secp256k1_fe_set_int,
+    secp256k1_fe_is_odd, secp256k1_fe_mul, secp256k1_fe_negate, secp256k1_fe_normalize,
+    secp256k1_fe_set_b32, secp256k1_fe_set_int,
 };
 
 //use crate::{point::Point, scalar::Scalar};
@@ -87,6 +87,11 @@ impl Element {
         }
 
         bytes
+    }
+
+    /// Return true if the field element is odd
+    pub fn is_odd(&self) -> bool {
+        unsafe { secp256k1_fe_is_odd(&self.fe) == 1 }
     }
 }
 
@@ -479,6 +484,15 @@ mod tests {
 
             assert_eq!(x + (-x), Element::from(0));
         }
+    }
+
+    #[test]
+    fn is_odd() {
+        let even = Element::from(2);
+        let odd = Element::from(1);
+
+        assert!(!even.is_odd());
+        assert!(odd.is_odd());
     }
 
     #[test]
