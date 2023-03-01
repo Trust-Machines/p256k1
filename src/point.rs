@@ -514,7 +514,8 @@ impl Zero for Point {
 
 /// A Point in compressed binary format
 pub struct Compressed {
-    data: [u8; 33],
+    /// The raw bytes of the compressed point
+    pub data: [u8; 33],
 }
 
 impl Compressed {
