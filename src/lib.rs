@@ -17,6 +17,9 @@ mod bindings {
 /// secp256k1 context operations
 pub mod context;
 
+/// ECDSA operations
+pub mod ecdsa;
+
 /// Point operations on the secp256k1 curve
 pub mod point;
 
