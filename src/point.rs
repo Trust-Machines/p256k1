@@ -13,15 +13,15 @@ use num_traits::Zero;
 use std::os::raw::c_void;
 
 use crate::bindings::{
-    secp256k1_callback, secp256k1_context, secp256k1_context_create, secp256k1_ecmult,
-    secp256k1_ecmult_multi_callback, secp256k1_ecmult_multi_var, secp256k1_fe,
-    secp256k1_fe_get_b32, secp256k1_fe_is_odd, secp256k1_fe_normalize_var, secp256k1_fe_set_b32,
-    secp256k1_ge, secp256k1_ge_set_gej, secp256k1_ge_set_xo_var, secp256k1_gej,
-    secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_gej_set_ge, secp256k1_scalar,
-    secp256k1_scratch_space_create, secp256k1_scratch_space_destroy, size_t,
-    SECP256K1_CONTEXT_SIGN, SECP256K1_TAG_PUBKEY_EVEN, SECP256K1_TAG_PUBKEY_ODD,
+    secp256k1_callback, secp256k1_ecmult, secp256k1_ecmult_multi_callback,
+    secp256k1_ecmult_multi_var, secp256k1_fe, secp256k1_fe_get_b32, secp256k1_fe_is_odd,
+    secp256k1_fe_normalize_var, secp256k1_fe_set_b32, secp256k1_ge, secp256k1_ge_set_gej,
+    secp256k1_ge_set_xo_var, secp256k1_gej, secp256k1_gej_add_var, secp256k1_gej_neg,
+    secp256k1_gej_set_ge, secp256k1_scalar, secp256k1_scratch_space_create,
+    secp256k1_scratch_space_destroy, size_t, SECP256K1_TAG_PUBKEY_EVEN, SECP256K1_TAG_PUBKEY_ODD,
 };
 
+use crate::context::Context;
 use crate::scalar::Scalar;
 
 /// The secp256k1 base point
@@ -143,11 +143,6 @@ impl Point {
         }
     }
 
-    /// Return a context object for the wrapped libsecp256k1
-    pub fn ctx() -> *const secp256k1_context {
-        unsafe { secp256k1_context_create(SECP256K1_CONTEXT_SIGN) }
-    }
-
     #[allow(non_snake_case)]
     /// Return the base point
     pub fn G() -> Point {
@@ -199,11 +194,11 @@ impl Point {
         };
 
         let zero = Scalar::zero();
-        let ctx = Point::ctx();
+        let ctx = Context::default();
         let multi_callback: secp256k1_ecmult_multi_callback = Some(ecmult_multi_callback);
 
         unsafe {
-            let scratch = secp256k1_scratch_space_create(ctx, 1048576);
+            let scratch = secp256k1_scratch_space_create(ctx.context, 1048576);
             let i = secp256k1_ecmult_multi_var(
                 &multi_error_callback,
                 scratch,
@@ -213,7 +208,7 @@ impl Point {
                 sp_ptr,
                 n,
             );
-            secp256k1_scratch_space_destroy(ctx, scratch);
+            secp256k1_scratch_space_destroy(ctx.context, scratch);
             if i == 0 {
                 return Err(Error::MultiMultFailed);
             }
