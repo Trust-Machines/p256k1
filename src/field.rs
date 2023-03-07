@@ -96,7 +96,7 @@ impl Element {
 
     /// Fast exponentiation using the square and multiply algorithm
     pub fn square_and_multiply(x: &Self, n: &Self) -> Self {
-        let mut ret = Self::one();
+        let mut r = Self::one();
         let mut square = *x;
         let bytes = n.to_bytes();
 
@@ -104,13 +104,17 @@ impl Element {
             let bits = bytes[31 - i].view_bits::<Lsb0>();
             for bit in bits {
                 if *bit {
-                    ret *= square;
+                    r *= square;
                 }
                 square *= square;
             }
         }
 
-        ret
+        unsafe {
+            secp256k1_fe_normalize(&mut r.fe);
+        }
+
+        r
     }
 }
 
