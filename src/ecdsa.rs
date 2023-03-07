@@ -85,6 +85,7 @@ impl Signature {
 }
 
 impl From<[u8; 64]> for Signature {
+    /// Create a signature given an array of signed data.
     fn from(data: [u8; 64]) -> Self {
         Self {
             signature: secp256k1_ecdsa_signature { data },
@@ -94,6 +95,7 @@ impl From<[u8; 64]> for Signature {
 
 impl TryFrom<&[u8]> for Signature {
     type Error = Error;
+    /// Create a signature given a slice of signed data.
     fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
         let data: [u8; 64] = data[0..].try_into()?;
         Ok(Signature::from(data))
