@@ -1,11 +1,11 @@
 use base58::{FromBase58, FromBase58Error, ToBase58};
-//use bitvec::prelude::*;
+use bitvec::prelude::*;
 use core::{
     cmp::{Eq, PartialEq},
     convert::{From, TryFrom},
     fmt::{Debug, Display, Formatter, Result as FmtResult},
     hash::{Hash, Hasher},
-    ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub},
+    ops::{Add, AddAssign, BitXor, Mul, MulAssign, Neg, Sub},
 };
 use num_traits::{One, Zero};
 use rand_core::{CryptoRng, RngCore};
@@ -92,6 +92,25 @@ impl Element {
     /// Return true if the field element is odd
     pub fn is_odd(&self) -> bool {
         unsafe { secp256k1_fe_is_odd(&self.fe) == 1 }
+    }
+
+    /// Fast exponentiation using the square and multiply algorithm
+    pub fn square_and_multiply(x: &Self, n: &Self) -> Self {
+        let mut ret = Self::one();
+        let mut square = *x;
+        let bytes = n.to_bytes();
+
+        for i in 0..bytes.len() {
+            let bits = bytes[31 - i].view_bits::<Lsb0>();
+            for bit in bits {
+                if *bit {
+                    ret *= square;
+                }
+                square *= square;
+            }
+        }
+
+        ret
     }
 }
 
@@ -399,6 +418,38 @@ impl One for Element {
     }
 }
 
+impl BitXor<Element> for Element {
+    type Output = Element;
+
+    fn bitxor(self, rhs: Element) -> Self::Output {
+        Element::square_and_multiply(&self, &rhs)
+    }
+}
+
+impl BitXor<Element> for &Element {
+    type Output = Element;
+
+    fn bitxor(self, rhs: Element) -> Self::Output {
+        Element::square_and_multiply(self, &rhs)
+    }
+}
+
+impl BitXor<&Element> for Element {
+    type Output = Element;
+
+    fn bitxor(self, rhs: &Element) -> Self::Output {
+        Element::square_and_multiply(&self, rhs)
+    }
+}
+
+impl BitXor<&Element> for &Element {
+    type Output = Element;
+
+    fn bitxor(self, rhs: &Element) -> Self::Output {
+        Element::square_and_multiply(self, rhs)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -500,6 +551,20 @@ mod tests {
 
         assert!(!even.is_odd());
         assert!(odd.is_odd());
+    }
+
+    #[test]
+    fn pow() {
+        let mut rng = OsRng::default();
+        let k: i32 = 253;
+        let ke = Element::from(k);
+
+        for _ in 0..0xff {
+            let x = Element::random(&mut rng);
+
+            let klhs = (0..k).fold(Element::one(), |s, _| s * x);
+            assert_eq!(klhs, x ^ ke);
+        }
     }
 
     #[test]
