@@ -76,31 +76,6 @@ impl Signature {
         Ok(sig)
     }
 
-    /// Create an ECDSA signature given a slice of signed data.
-    /// Note it also serializes the data in compact (64 byte) format
-    pub fn try_from_slice(ctx: &Context, data: &[u8]) -> Result<Self, Error> {
-        let data: [u8; 64] = data[0..].try_into()?;
-        Signature::try_from_array(ctx, data)
-    }
-
-    /// Create an ECDSA signature given an array of signed data.
-    /// Note it also serializes the data in compact (64 byte) format
-    pub fn try_from_array(ctx: &Context, data: [u8; 64]) -> Result<Self, Error> {
-        let mut sig = Self {
-            signature: secp256k1_ecdsa_signature { data: [0u8; 64] },
-        };
-        //Attempt to serialize the data into the signature
-        let parsed = unsafe {
-            secp256k1_ecdsa_signature_parse_compact(ctx.context, &mut sig.signature, data.as_ptr())
-        };
-        if parsed == 0 {
-            return Err(Error::TryFrom(format!(
-                "Failed to serialize input data into compact (64 byte) form."
-            )));
-        }
-        Ok(sig)
-    }
-
     /// Verify an ECDSA signature
     pub fn verify(&self, ctx: &Context, hash: &[u8], pub_key: &PubKey) -> bool {
         1 == unsafe {
@@ -120,6 +95,41 @@ impl Signature {
             );
         }
         bytes
+    }
+}
+
+impl TryFrom<(&Context, &[u8])> for Signature {
+    type Error = Error;
+    /// Create an ECDSA signature given a slice of signed data.
+    /// Note it also serializes the data in compact (64 byte) format
+    fn try_from(input: (&Context, &[u8])) -> Result<Self, Self::Error> {
+        let data: [u8; 64] = input.1[0..].try_into()?;
+        Signature::try_from((input.0, data))
+    }
+}
+
+impl TryFrom<(&Context, [u8; 64])> for Signature {
+    type Error = Error;
+    /// Create an ECDSA signature given an array of signed data.
+    /// Note it also serializes the data in compact (64 byte) format
+    fn try_from(input: (&Context, [u8; 64])) -> Result<Self, Self::Error> {
+        let mut sig = Self {
+            signature: secp256k1_ecdsa_signature { data: [0u8; 64] },
+        };
+        //Attempt to serialize the data into the signature
+        let parsed = unsafe {
+            secp256k1_ecdsa_signature_parse_compact(
+                input.0.context,
+                &mut sig.signature,
+                input.1.as_ptr(),
+            )
+        };
+        if parsed == 0 {
+            return Err(Error::TryFrom(format!(
+                "Failed to serialize input data into compact (64 byte) form."
+            )));
+        }
+        Ok(sig)
     }
 }
 
@@ -164,8 +174,8 @@ mod tests {
         let sig_from_struct = Signature {
             signature: secp256k1_ecdsa_signature { data: bytes },
         };
-        let sig_from_slice = Signature::try_from_slice(&ctx, bytes.as_slice()).unwrap();
-        let sig_from_array = Signature::try_from_array(&ctx, bytes).unwrap();
+        let sig_from_slice = Signature::try_from((&ctx, bytes.as_slice())).unwrap();
+        let sig_from_array = Signature::try_from((&ctx, bytes)).unwrap();
 
         assert_ne!(
             sig_from_struct.to_bytes(&ctx),
@@ -179,11 +189,11 @@ mod tests {
 
         let mut too_small = [0u8; 63];
         rng.fill_bytes(&mut too_small);
-        assert!(Signature::try_from_slice(&ctx, too_small.as_slice()).is_err());
+        assert!(Signature::try_from((&ctx, too_small.as_slice())).is_err());
 
         let mut too_big = [0u8; 65];
         rng.fill_bytes(&mut too_big);
-        assert!(Signature::try_from_slice(&ctx, too_big.as_slice()).is_err());
+        assert!(Signature::try_from((&ctx, too_big.as_slice())).is_err());
     }
 
     #[test]
@@ -196,8 +206,9 @@ mod tests {
         let mut bytes = [0u8; 64];
         rng.fill_bytes(&mut bytes);
 
-        //Serialize with try_from_array and deserialize with to_bytes
-        let sig = Signature::try_from_array(&ctx, bytes).unwrap();
+        //Serialize with try_from and deserialize with to_bytes
+        let sig = Signature::try_from((&ctx, bytes)).unwrap();
+        assert_ne!(sig.signature.data, bytes);
         assert_eq!(sig.to_bytes(&ctx), bytes);
     }
 }
