@@ -4,12 +4,15 @@ use crate::bindings::{
 };
 use crate::context::Context;
 use crate::scalar::Scalar;
+use std::array::TryFromSliceError;
 
 #[derive(Debug)]
 /// Errors in ECDSA signature operations
 pub enum Error {
     /// Error occurred due to invalid secret key
     InvalidSecretKey,
+    /// Error occurred during a try from operation
+    TryFrom(String),
 }
 
 /**
@@ -66,17 +69,40 @@ impl Signature {
     }
 
     /// Verify an ECDSA signature
-    pub fn verify(self, ctx: &Context, hash: &[u8], pub_key: &PubKey) -> bool {
+    pub fn verify(&self, ctx: &Context, hash: &[u8], pub_key: &PubKey) -> bool {
         1 == unsafe {
             secp256k1_ecdsa_verify(ctx.context, &self.signature, hash.as_ptr(), &pub_key.key)
         }
+    }
+
+    /// Return the underlying bytes within a signature
+    pub fn to_bytes(&self) -> [u8; 64] {
+        self.signature.data
+    }
+}
+
+impl From<[u8; 64]> for Signature {
+    fn from(data: [u8; 64]) -> Self {
+        Self {
+            signature: secp256k1_ecdsa_signature { data },
+        }
+    }
+}
+
+impl TryFrom<&[u8]> for Signature {
+    type Error = Error;
+    fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
+        let data: [u8; 64] = data[0..64]
+            .try_into()
+            .map_err(|e: TryFromSliceError| Error::TryFrom(e.to_string()))?;
+        Ok(Signature::from(data))
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand_core::OsRng;
+    use rand_core::{OsRng, RngCore};
     use sha3::{Digest, Sha3_256};
 
     #[test]
@@ -98,5 +124,33 @@ mod tests {
 
         // Verify the generated signature is valid using the msg_hash and corresponding public key
         assert!(sig.verify(&ctx, &msg_hash, &pub_key));
+    }
+
+    #[test]
+    fn from() {
+        let mut rng = OsRng::default();
+        let mut bytes = [0u8; 64];
+
+        rng.fill_bytes(&mut bytes);
+
+        let sig_from_struct = Signature {
+            signature: secp256k1_ecdsa_signature { data: bytes },
+        };
+
+        let sig_from_slice = Signature::try_from(bytes.as_slice()).unwrap();
+        let sig_from_array = Signature::from(bytes);
+
+        assert_eq!(sig_from_struct.to_bytes(), sig_from_slice.to_bytes());
+        assert_eq!(sig_from_struct.to_bytes(), sig_from_array.to_bytes());
+    }
+
+    #[test]
+    fn to_bytes() {
+        let mut rng = OsRng::default();
+        let mut bytes = [0u8; 64];
+        rng.fill_bytes(&mut bytes);
+
+        let sig = Signature::from(bytes);
+        assert_eq!(sig.to_bytes(), sig.signature.data);
     }
 }
