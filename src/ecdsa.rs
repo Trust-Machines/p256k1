@@ -125,9 +125,9 @@ impl TryFrom<(&Context, [u8; 64])> for Signature {
             )
         };
         if parsed == 0 {
-            return Err(Error::TryFrom(format!(
-                "Failed to serialize input data into compact (64 byte) form."
-            )));
+            return Err(Error::TryFrom(
+                "Failed to serialize input data into compact (64 byte) form.".to_string(),
+            ));
         }
         Ok(sig)
     }
