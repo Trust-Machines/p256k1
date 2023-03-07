@@ -13,7 +13,7 @@ pub enum Error {
 }
 
 /**
-Signature is a wrapper around libsecp256k1's internal secp256k1_pubkey struct.
+PubKey is a wrapper around libsecp256k1's secp256k1_pubkey struct.
 */
 pub struct PubKey {
     key: secp256k1_pubkey,
@@ -36,7 +36,7 @@ impl PubKey {
 }
 
 /**
-Signature is a wrapper around libsecp256k1's internal secp256k1_ecdsa_signature struct.
+Signature is a wrapper around libsecp256k1's secp256k1_ecdsa_signature struct.
 */
 pub struct Signature {
     /// The wrapped libsecp256k1 signature
@@ -67,10 +67,9 @@ impl Signature {
 
     /// Verify an ECDSA signature
     pub fn verify(self, ctx: &Context, hash: &[u8], pub_key: &PubKey) -> bool {
-        let valid = unsafe {
+        1 == unsafe {
             secp256k1_ecdsa_verify(ctx.context, &self.signature, hash.as_ptr(), &pub_key.key)
-        };
-        valid == 1
+        }
     }
 }
 
@@ -78,6 +77,7 @@ impl Signature {
 mod tests {
     use super::*;
     use rand_core::OsRng;
+    use sha3::{Digest, Sha3_256};
 
     #[test]
     fn signature_generation() {
@@ -89,13 +89,10 @@ mod tests {
         let pub_key = PubKey::new(&ctx, &sec_key).unwrap();
 
         // Instead of signing a message directly, must sign a 32-byte hash of it.
-        // Here the message is "Hello, world!" hashed usings SHA-256.
-        let msg_hash: [u8; 32] = [
-            0x31, 0x5F, 0x5B, 0xDB, 0x76, 0xD0, 0x78, 0xC4, 0x3B, 0x8A, 0xC0, 0x06, 0x4E, 0x4A,
-            0x01, 0x64, 0x61, 0x2B, 0x1F, 0xCE, 0x77, 0xC8, 0x69, 0x34, 0x5B, 0xFC, 0x94, 0xC7,
-            0x58, 0x94, 0xED, 0xD3,
-        ];
-
+        let msg = b"Hello, world!";
+        let mut hasher = Sha3_256::new();
+        hasher.update(msg);
+        let msg_hash = hasher.finalize();
         // Generate a ECDSA signature
         let sig = Signature::new(&ctx, &msg_hash, &sec_key).unwrap();
 

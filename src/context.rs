@@ -20,7 +20,7 @@ impl Default for Context {
 }
 
 impl Drop for Context {
-    /// Destroy context's underlying secp256k1_context ptr
+    /// Destroy underlying secp256k1_context ptr
     fn drop(&mut self) {
         unsafe { secp256k1_context_destroy(self.context) }
     }
