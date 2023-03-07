@@ -215,6 +215,20 @@ impl Point {
 
         Ok(r)
     }
+
+    /// Return true if the y coordinate of this point is even
+    pub fn has_even_y(&self) -> bool {
+        let mut ge = secp256k1_ge {
+            x: secp256k1_fe { n: [0; 5] },
+            y: secp256k1_fe { n: [0; 5] },
+            infinity: 0,
+        };
+
+        unsafe {
+            secp256k1_ge_set_gej(&mut ge, &self.gej);
+            secp256k1_fe_is_odd(&ge.y) == 0
+        }
+    }
 }
 
 impl Default for Point {
