@@ -5,14 +5,17 @@ use crate::bindings::{
 use crate::context::Context;
 use crate::scalar::Scalar;
 use std::array::TryFromSliceError;
+use thiserror::Error as ThisError;
 
-#[derive(Debug)]
+#[derive(ThisError, Debug)]
 /// Errors in ECDSA signature operations
 pub enum Error {
     /// Error occurred due to invalid secret key
+    #[error("Invalid Secret Key")]
     InvalidSecretKey,
     /// Error occurred during a try from operation
-    TryFrom(String),
+    #[error("TryFrom operation failed: {0}")]
+    TryFrom(#[from] TryFromSliceError),
 }
 
 /**
@@ -92,9 +95,7 @@ impl From<[u8; 64]> for Signature {
 impl TryFrom<&[u8]> for Signature {
     type Error = Error;
     fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
-        let data: [u8; 64] = data[0..64]
-            .try_into()
-            .map_err(|e: TryFromSliceError| Error::TryFrom(e.to_string()))?;
+        let data: [u8; 64] = data[0..].try_into()?;
         Ok(Signature::from(data))
     }
 }
@@ -136,12 +137,19 @@ mod tests {
         let sig_from_struct = Signature {
             signature: secp256k1_ecdsa_signature { data: bytes },
         };
-
         let sig_from_slice = Signature::try_from(bytes.as_slice()).unwrap();
         let sig_from_array = Signature::from(bytes);
 
         assert_eq!(sig_from_struct.to_bytes(), sig_from_slice.to_bytes());
         assert_eq!(sig_from_struct.to_bytes(), sig_from_array.to_bytes());
+
+        let mut too_small = [0u8; 63];
+        rng.fill_bytes(&mut too_small);
+        assert!(Signature::try_from(too_small.as_slice()).is_err());
+
+        let mut too_big = [0u8; 65];
+        rng.fill_bytes(&mut too_big);
+        assert!(Signature::try_from(too_big.as_slice()).is_err());
     }
 
     #[test]
