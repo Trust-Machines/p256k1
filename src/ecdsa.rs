@@ -28,8 +28,6 @@ PubKey is a wrapper around libsecp256k1's secp256k1_pubkey struct.
 pub struct PubKey {
     /// The wrapped secp256k1_pubkey public key
     key: secp256k1_pubkey,
-    // The context associated with the public key
-    context: Context,
 }
 
 impl PubKey {
@@ -37,14 +35,10 @@ impl PubKey {
     pub fn new(sec_key: &Scalar) -> Result<Self, Error> {
         let mut pub_key = Self {
             key: secp256k1_pubkey { data: [0; 64] },
-            context: Context::default(),
         };
+        let ctx = Context::default();
         if unsafe {
-            secp256k1_ec_pubkey_create(
-                pub_key.context.context,
-                &mut pub_key.key,
-                sec_key.to_bytes().as_ptr(),
-            )
+            secp256k1_ec_pubkey_create(ctx.context, &mut pub_key.key, sec_key.to_bytes().as_ptr())
         } == 0
         {
             return Err(Error::InvalidSecretKey);
