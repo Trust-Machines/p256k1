@@ -13,10 +13,16 @@ use rand_core::{CryptoRng, RngCore};
 use crate::bindings::{
     secp256k1_fe, secp256k1_fe_add, secp256k1_fe_cmp_var, secp256k1_fe_get_b32, secp256k1_fe_inv,
     secp256k1_fe_is_odd, secp256k1_fe_mul, secp256k1_fe_negate, secp256k1_fe_normalize,
-    secp256k1_fe_set_b32, secp256k1_fe_set_int,
+    secp256k1_fe_normalize_var, secp256k1_fe_set_b32, secp256k1_fe_set_int,
 };
 
 use crate::scalar::Scalar;
+
+/// Field order
+pub const P: [u8; 32] = [
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE, 0xFF, 0xFF, 0xFC, 0x2F,
+];
 
 #[derive(Debug)]
 /// Errors when converting field elements
@@ -112,6 +118,28 @@ impl Element {
 
         unsafe {
             secp256k1_fe_normalize(&mut r.fe);
+        }
+
+        r
+    }
+
+    /// Normalize the elemwnt with constant time guarantees
+    pub fn normalize(&self) -> Self {
+        let mut r = *self;
+
+        unsafe {
+            secp256k1_fe_normalize(&mut r.fe);
+        }
+
+        r
+    }
+
+    /// Normalize the elemwnt without constant time guarantees
+    pub fn normalize_var(&self) -> Self {
+        let mut r = *self;
+
+        unsafe {
+            secp256k1_fe_normalize_var(&mut r.fe);
         }
 
         r

@@ -10,6 +10,7 @@ use core::{
     slice,
 };
 use num_traits::Zero;
+use primitive_types::U256;
 use std::os::raw::c_void;
 
 use crate::bindings::{
@@ -49,6 +50,12 @@ pub const G: Point = Point {
     },
 };
 
+/// Group order
+pub const N: [u8; 32] = [
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE,
+    0xBA, 0xAE, 0xDC, 0xE6, 0xAF, 0x48, 0xA0, 0x3B, 0xBF, 0xD2, 0x5E, 0x8C, 0xD0, 0x36, 0x41, 0x41,
+];
+
 #[derive(Debug)]
 /// Errors when converting points
 pub enum ConversionError {
@@ -69,6 +76,8 @@ pub enum Error {
     MultiMultFailed,
     /// Error decompressing a point
     Conversion(ConversionError),
+    /// Error lifting a field element into an even_y point
+    LiftFailed,
 }
 
 #[derive(Copy, Clone, serde::Serialize, serde::Deserialize)]
@@ -227,6 +236,61 @@ impl Point {
         unsafe {
             secp256k1_ge_set_gej(&mut ge, &self.gej);
             secp256k1_fe_is_odd(&ge.y) == 0
+        }
+    }
+
+    /// Return the x coord of this point as a normalized field element
+    pub fn x(&self) -> field::Element {
+        let mut ge = secp256k1_ge {
+            x: secp256k1_fe { n: [0; 5] },
+            y: secp256k1_fe { n: [0; 5] },
+            infinity: 0,
+        };
+
+        unsafe {
+            secp256k1_ge_set_gej(&mut ge, &self.gej);
+            secp256k1_fe_normalize_var(&mut ge.x);
+            field::Element { fe: ge.x }
+        }
+    }
+
+    /// Return the y coord of this point as a normalized field element
+    pub fn y(&self) -> field::Element {
+        let mut ge = secp256k1_ge {
+            x: secp256k1_fe { n: [0; 5] },
+            y: secp256k1_fe { n: [0; 5] },
+            infinity: 0,
+        };
+
+        unsafe {
+            secp256k1_ge_set_gej(&mut ge, &self.gej);
+            secp256k1_fe_normalize_var(&mut ge.y);
+            field::Element { fe: ge.x }
+        }
+    }
+
+    /// return the point P for which x(P) = x and has_even_y(P), or fails if x is greater than p-1 or no such point exists
+    pub fn lift_x(x: &field::Element) -> Result<Point, Error> {
+        let fp = field::Element::from(field::P);
+        let p = U256::from_big_endian(&field::P);
+        let p14 = (p + 1) / 4;
+        let mut p14_bytes = [0u8; 32];
+
+        p14.to_big_endian(&mut p14_bytes);
+
+        let fp14 = field::Element::from(p14_bytes);
+        let c = x * x * x + field::Element::from(7);
+        let y = c ^ fp14;
+
+        if c != y * y {
+            return Err(Error::LiftFailed);
+        }
+
+        let point = Point::from((*x, y));
+        if point.has_even_y() {
+            Ok(point)
+        } else {
+            Ok(Point::from((*x, fp - y)))
         }
     }
 }
