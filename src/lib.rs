@@ -25,3 +25,6 @@ pub mod point;
 
 /// Scalar arithmetic modulo the group order
 pub mod scalar;
+
+/// Field elements arithmetic
+pub mod field;
