@@ -760,4 +760,23 @@ mod tests {
         assert_eq!(a, e);
         assert_eq!(s, t);
     }
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_bip_340() {
+        let mut rng = OsRng::default();
+
+        for _ in 0..0xff {
+            let a = Scalar::random(&mut rng);
+            let A = Point::from(a);
+            let c = A.compress();
+            let x = field::Element::try_from(&c.data[1..]).unwrap();
+            let B = Point::lift_x(&x).unwrap();
+
+            if A.has_even_y() {
+                assert_eq!(A, B);
+            } else {
+                assert_ne!(A, B);
+            }
+        }
+    }
 }
