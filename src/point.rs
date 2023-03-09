@@ -265,7 +265,7 @@ impl Point {
         unsafe {
             secp256k1_ge_set_gej(&mut ge, &self.gej);
             secp256k1_fe_normalize_var(&mut ge.y);
-            field::Element { fe: ge.x }
+            field::Element { fe: ge.y }
         }
     }
 
@@ -775,7 +775,8 @@ mod tests {
             if A.has_even_y() {
                 assert_eq!(A, B);
             } else {
-                assert_ne!(A, B);
+                assert_eq!(A.x(), B.x());
+                assert_ne!(A.y(), B.y());
             }
         }
     }
