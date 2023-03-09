@@ -775,8 +775,11 @@ mod tests {
             if A.has_even_y() {
                 assert_eq!(A, B);
             } else {
+                let p = field::Element::from(field::P);
+
                 assert_eq!(A.x(), B.x());
                 assert_ne!(A.y(), B.y());
+                assert_eq!(A.y(), p - B.y());
             }
         }
     }
