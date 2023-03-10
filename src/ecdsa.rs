@@ -147,7 +147,7 @@ impl TryFrom<[u8; 64]> for Signature {
 mod tests {
     use super::*;
     use rand_core::{OsRng, RngCore};
-    use sha3::{Digest, Sha3_256};
+    use sha2::{Digest, Sha256};
 
     #[test]
     fn signature_generation() {
@@ -158,7 +158,7 @@ mod tests {
 
         // Instead of signing a message directly, must sign a 32-byte hash of it.
         let msg = b"Hello, world!";
-        let mut hasher = Sha3_256::new();
+        let mut hasher = Sha256::new();
         hasher.update(msg);
         let msg_hash = hasher.finalize();
         // Generate a ECDSA signature
