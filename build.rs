@@ -1,11 +1,33 @@
-use std::collections::HashSet;
-use std::env;
-use std::iter::FromIterator;
-
 use itertools::Itertools;
+use regex::Regex;
+use std::collections::HashSet;
+use std::ffi::OsString;
+use std::fs::{write, read_to_string};
+use std::iter::FromIterator;
+use std::path::Path;
+use std::{env, fs};
+
 use quote::ToTokens;
 
 fn main() {
+    // fix secp256k1 source code.
+    /*
+    {
+        let r = Regex::new("SECP256K1_API").unwrap();
+        let path = Path::new("./secp256k1");
+        let src = read_dir_recursive(&path.join("src"));
+        let include = read_dir_recursive(&path.join("include"));
+        let all = src.into_iter().chain(include.into_iter()).collect::<Vec<_>>();
+        write("_regex_report.txt", format!("{:?}", all)).unwrap();
+        for i in all {
+            let text = read_to_string(i).unwrap();
+            let new_text = r.replace_all(&text, "p256k1v3_0_0_").to_string();
+            // fs::write(i, new_text).unwrap();
+        }
+    }
+    */
+
+    //
     println!("cargo:rustc-env=ECMULT_GEN_PREC_BITS=4");
     println!("cargo:rustc-env=ECMULT_WINDOW_SIZE=15");
 
@@ -133,3 +155,20 @@ fn expand_tokens_if_matches(
         (token, _, _) => vec![token],
     }
 }
+
+/*
+fn read_dir_recursive(path: &Path) -> Vec<OsString> {
+    fs::read_dir(path)
+        .expect(path.to_str().unwrap())
+        .flat_map(|r| {
+            let de = r.unwrap();
+            let file_name = path.join(de.file_name());
+            if de.file_type().unwrap().is_dir() {
+                read_dir_recursive(&file_name)
+            } else {
+                vec![file_name.as_os_str().to_os_string()]
+            }
+        })
+        .collect()
+}
+*/
