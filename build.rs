@@ -5,15 +5,19 @@ use std::iter::FromIterator;
 use itertools::Itertools;
 use quote::ToTokens;
 
+fn path(s: &str) -> String {
+    "depend/secp256k1/".to_string() + s
+}
+
 fn main() {
     println!("cargo:rustc-env=ECMULT_GEN_PREC_BITS=4");
     println!("cargo:rustc-env=ECMULT_WINDOW_SIZE=15");
 
     let mut base_config = cc::Build::new();
     base_config
-        .include("secp256k1/")
-        .include("secp256k1/include")
-        .include("secp256k1/src")
+        .include(path(""))
+        .include(path("include"))
+        .include(path("src"))
         .flag_if_supported("-Wno-unused-function") // some ecmult stuff is defined but not used upstream
         .define("SECP256K1_API", Some(""))
         .define("ENABLE_MODULE_ECDH", Some("1"))
@@ -26,9 +30,9 @@ fn main() {
         .define("ECMULT_WINDOW_SIZE", Some("15"));
 
     base_config
-        .file("secp256k1/src/secp256k1.c")
-        .file("secp256k1/src/precomputed_ecmult.c")
-        .file("secp256k1/src/precomputed_ecmult_gen.c")
+        .file(path("src/secp256k1.c"))
+        .file(path("src/precomputed_ecmult.c"))
+        .file(path("src/precomputed_ecmult_gen.c"))
         .compile("libsecp256k1.a");
 
     // Tell cargo to invalidate the built crate whenever the wrapper changes
@@ -50,6 +54,7 @@ fn main() {
         // Unwrap the Result and panic on failure.
         .expect("Unable to generate bindings");
 
+    /*
     let bindings_file = &format!("{}/bindings.rs", env::var("OUT_DIR").unwrap());
 
     // Write the bindings to the $OUT_DIR/bindings.rs file.
@@ -61,6 +66,7 @@ fn main() {
 
     add_serde_derive_attributes(&serializable_types, bindings_file)
         .expect("Failed to add serde derive to type definitions");
+    */
 }
 
 fn add_serde_derive_attributes<P: AsRef<std::path::Path>>(
