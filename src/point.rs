@@ -19,7 +19,7 @@ use crate::bindings::{
     secp256k1_fe_normalize_var, secp256k1_fe_set_b32, secp256k1_ge, secp256k1_ge_set_gej,
     secp256k1_ge_set_xo_var, secp256k1_gej, secp256k1_gej_add_var, secp256k1_gej_neg,
     secp256k1_gej_set_ge, secp256k1_scalar, secp256k1_scratch_space_create,
-    secp256k1_scratch_space_destroy, size_t, SECP256K1_TAG_PUBKEY_EVEN, SECP256K1_TAG_PUBKEY_ODD,
+    secp256k1_scratch_space_destroy, SECP256K1_TAG_PUBKEY_EVEN, SECP256K1_TAG_PUBKEY_ODD,
 };
 
 use crate::{context::Context, field, scalar::Scalar};
@@ -110,7 +110,7 @@ struct ScalarsPoints {
 extern "C" fn ecmult_multi_callback(
     sc: *mut secp256k1_scalar,
     pt: *mut secp256k1_ge,
-    idx: size_t,
+    idx: usize,
     data: *mut ::std::os::raw::c_void,
 ) -> ::std::os::raw::c_int {
     unsafe {
@@ -187,7 +187,7 @@ impl Point {
     /// Perform a multi-exponentiation operation on the passed scalars and points, using the Pipperger algorithm
     pub fn multimult(scalars: Vec<Scalar>, points: Vec<Point>) -> Result<Point, Error> {
         let mut r = Point::new();
-        let n = scalars.len() as u64;
+        let n = scalars.len();
         let mut sp = ScalarsPoints {
             s: scalars,
             p: points,
