@@ -123,10 +123,10 @@ extern "C" fn ecmult_multi_callback(
             infinity: 0,
         };
 
-        let gej = &(*sp).p[idx as usize].gej as *const secp256k1_gej;
+        let gej = &(*sp).p[idx].gej as *const secp256k1_gej;
         secp256k1_ge_set_gej(&mut ge, gej);
 
-        *sc = (*sp).s[idx as usize].scalar;
+        *sc = (*sp).s[idx].scalar;
         *pt = ge;
     }
 
