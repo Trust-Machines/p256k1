@@ -13,7 +13,7 @@ fn prefix(v: &str) -> String {
 fn main() {
     // fix secp256k1 source code.
     {
-        let c = [
+        let mut c = [
             "secp256k1_context_static",
             "secp256k1_context_no_precomp",
             "secp256k1_selftest",
@@ -26,6 +26,8 @@ fn main() {
             "secp256k1_scratch_space_destroy",
             "secp256k1_ec_pubkey_parse",
         ];
+
+        c.sort();
 
         {
             let top = &["#ifndef P256K1_H", "#define P256K1_H"].map(str::to_string);
