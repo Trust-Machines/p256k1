@@ -44,12 +44,7 @@ fn main() {
             let bottom = &["};", ""].map(str::to_string);
             let d = &c.map(|v| format!("    {} as {v},", prefix(v)));
 
-            let text = top
-                .iter()
-                .chain(d)
-                .chain(bottom)
-                .chain(&[String::new()])
-                .join("\n");
+            let text = top.iter().chain(d).chain(bottom).join("\n");
             fs::write("./src/_rename.rs", text).unwrap();
         }
     }
