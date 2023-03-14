@@ -1,6 +1,6 @@
-use crate::bindings::{
-    secp256k1_context, secp256k1_context_create, secp256k1_context_destroy, SECP256K1_CONTEXT_SIGN,
-};
+use crate::bindings::{secp256k1_context, SECP256K1_CONTEXT_SIGN};
+
+use super::_rename::{secp256k1_context_create, secp256k1_context_destroy};
 
 /**
 Context is a wrapper around libsecp256k1's internal secp256k1_context struct.

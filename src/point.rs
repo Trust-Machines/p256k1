@@ -18,9 +18,10 @@ use crate::bindings::{
     secp256k1_ecmult_multi_var, secp256k1_fe, secp256k1_fe_get_b32, secp256k1_fe_is_odd,
     secp256k1_fe_normalize_var, secp256k1_fe_set_b32, secp256k1_ge, secp256k1_ge_set_gej,
     secp256k1_ge_set_xo_var, secp256k1_gej, secp256k1_gej_add_var, secp256k1_gej_neg,
-    secp256k1_gej_set_ge, secp256k1_scalar, secp256k1_scratch_space_create,
-    secp256k1_scratch_space_destroy, SECP256K1_TAG_PUBKEY_EVEN, SECP256K1_TAG_PUBKEY_ODD,
+    secp256k1_gej_set_ge, secp256k1_scalar, SECP256K1_TAG_PUBKEY_EVEN, SECP256K1_TAG_PUBKEY_ODD,
 };
+
+use crate::_rename::{secp256k1_scratch_space_create, secp256k1_scratch_space_destroy};
 
 use crate::{context::Context, field, scalar::Scalar};
 

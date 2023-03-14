@@ -1,13 +1,60 @@
 use itertools::Itertools;
 use std::collections::HashSet;
 
-use std::env;
 use std::iter::FromIterator;
+use std::{env, fs};
 
 use quote::ToTokens;
 
+fn prefix(v: &str) -> String {
+    format!("prefix_{v}")
+}
+
 fn main() {
     // fix secp256k1 source code.
+    {
+        let c = [
+            "secp256k1_context_static",
+            "secp256k1_context_no_precomp",
+            "secp256k1_selftest",
+            "secp256k1_context_create",
+            "secp256k1_context_clone",
+            "secp256k1_context_destroy",
+            "secp256k1_context_set_illegal_callback",
+            "secp256k1_context_set_error_callback",
+            "secp256k1_scratch_space_create",
+            "secp256k1_scratch_space_destroy",
+            "secp256k1_ec_pubkey_parse",
+        ];
+
+        {
+            let top = &["#ifndef P256K1_H", "#define P256K1_H"].map(str::to_string);
+
+            let bottom = &["#endif", ""].map(str::to_string);
+
+            let d = &c.map(|v| format!("#define {v} {}", prefix(v)));
+
+            let text = top
+                .iter()
+                .chain(d)
+                .chain(bottom)
+                .join("\n");
+            fs::write("./_p256k1.h", text).unwrap();
+        }
+        {
+            let top = &["pub use crate::bindings::{"].map(str::to_string);
+            let bottom = &["};", ""].map(str::to_string);
+            let d = &c.map(|v| format!("    {} as {v},", prefix(v)));
+
+            let text = top
+                .iter()
+                .chain(d)
+                .chain(bottom)
+                .chain(&[String::new()])
+                .join("\n");
+            fs::write("./src/_rename.rs", text).unwrap();
+        }
+    }
     /*
     {
         let r = Regex::new("#include <../../_p256k1.h>").unwrap();
