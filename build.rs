@@ -1,11 +1,8 @@
 use itertools::Itertools;
-use regex::Regex;
 use std::collections::HashSet;
-use std::ffi::OsString;
-use std::fs::{write, read_to_string};
+
+use std::env;
 use std::iter::FromIterator;
-use std::path::Path;
-use std::{env, fs};
 
 use quote::ToTokens;
 
@@ -13,7 +10,7 @@ fn main() {
     // fix secp256k1 source code.
     /*
     {
-        let r = Regex::new("SECP256K1_API").unwrap();
+        let r = Regex::new("#include <../../_p256k1.h>").unwrap();
         let path = Path::new("./secp256k1");
         let src = read_dir_recursive(&path.join("src"));
         let include = read_dir_recursive(&path.join("include"));
@@ -155,20 +152,3 @@ fn expand_tokens_if_matches(
         (token, _, _) => vec![token],
     }
 }
-
-/*
-fn read_dir_recursive(path: &Path) -> Vec<OsString> {
-    fs::read_dir(path)
-        .expect(path.to_str().unwrap())
-        .flat_map(|r| {
-            let de = r.unwrap();
-            let file_name = path.join(de.file_name());
-            if de.file_type().unwrap().is_dir() {
-                read_dir_recursive(&file_name)
-            } else {
-                vec![file_name.as_os_str().to_os_string()]
-            }
-        })
-        .collect()
-}
-*/
