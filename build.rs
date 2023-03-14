@@ -34,11 +34,7 @@ fn main() {
 
             let d = &c.map(|v| format!("#define {v} {}", prefix(v)));
 
-            let text = top
-                .iter()
-                .chain(d)
-                .chain(bottom)
-                .join("\n");
+            let text = top.iter().chain(d).chain(bottom).join("\n");
             fs::write("./_p256k1.h", text).unwrap();
         }
         {

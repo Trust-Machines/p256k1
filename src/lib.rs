@@ -30,4 +30,3 @@ pub mod scalar;
 
 /// Field elements arithmetic
 pub mod field;
-
