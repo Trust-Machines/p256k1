@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use syn::{Item, ForeignItem, Ident};
 use std::collections::HashSet;
 
 use std::iter::FromIterator;
@@ -7,36 +8,81 @@ use std::{env, fs};
 use quote::ToTokens;
 
 fn main() {
-    // fix secp256k1 source code.
-    {
-        let c = {
-            let mut c = [
-                "secp256k1_context_static",
-                "secp256k1_context_no_precomp",
-                "secp256k1_selftest",
-                "secp256k1_context_create",
-                "secp256k1_context_clone",
-                "secp256k1_context_destroy",
-                "secp256k1_context_set_illegal_callback",
-                "secp256k1_context_set_error_callback",
-                "secp256k1_scratch_space_create",
-                "secp256k1_scratch_space_destroy",
-                "secp256k1_ec_pubkey_parse",
-            ];
-            c.sort();
-            c
-        };
+    let save_bindings = |path: &str| {
+        // The bindgen::Builder is the main entry point
+        // to bindgen, and lets you build up options for
+        // the resulting bindings.
+        let bindings = bindgen::Builder::default()
+            // The input header we would like to generate
+            // bindings for.
+            .header("wrapper.h")
+            // Tell cargo to invalidate the built crate whenever any of the
+            // included header files changed.
+            .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+            // Finish the builder and generate the bindings.
+            .generate()
+            // Unwrap the Result and panic on failure.
+            .expect("Unable to generate bindings");
 
+        // Write the bindings to the $OUT_DIR/bindings.rs file.
+        bindings
+            .write_to_file(path)
+            .expect("Couldn't write bindings!");
+    };
+
+    let read_syntax = |s: &str| {
+        let file_content = std::fs::read_to_string(s)
+            .map_err(Error::Io)
+            .expect("Couldn't open write");
+        syn::parse_file(&file_content)
+            .map_err(Error::Syntax)
+            .expect("Couldn't parse the bindings")
+    };
+
+    const TMP_BINDINGS: &str = "./_tmp_bindings.rs";
+    const PREFIX_FILE: &str = "./_p256k1.h";
+
+    fs::write(PREFIX_FILE, "").unwrap();
+    save_bindings(TMP_BINDINGS);
+
+    let list = {
+        let mut v = Vec::default();
+        let mut push = |x: Ident| {
+            let s = x.to_string();
+            if s.starts_with("secp256k1_") {
+                v.push(s);
+            }
+        };
+        for i in read_syntax(TMP_BINDINGS).items {
+            if let Item::ForeignMod(m) = i {
+                for i in m.items {
+                    match i {
+                        ForeignItem::Fn(f) => push(f.sig.ident),
+                        ForeignItem::Static(s) => push(s.ident),
+                        _ => {},
+                    }
+                }
+            }
+        }
+        v.sort();
+        v
+    };
+
+    {
         write_file(
-            "./_p256k1.h",
+            PREFIX_FILE,
             &["#ifndef P256K1_H", "#define P256K1_H"],
-            c.into_iter().map(|v| format!("#define {v} {}", prefix(v))),
+            list
+                .iter()
+                .map(|v| format!("#define {v} {}", prefix(&v))),
             &["#endif", ""],
         );
         write_file(
             "./src/_rename.rs",
             &["pub use crate::bindings::{"],
-            c.into_iter().map(|v| format!("    {} as {v},", prefix(v))),
+            list
+                .iter()
+                .map(|v| format!("    {} as {v},", prefix(&v))),
             &["};", ""],
         );
 
@@ -50,29 +96,17 @@ fn main() {
             content: impl Iterator<Item = String>,
             bottom: &[&str],
         ) {
-            fn to_iter(a: &str) {
+            fs::write(
+                path,
+                iter(top).chain(content).chain(iter(bottom)).join("\n"),
+            )
+            .unwrap();
 
+            fn iter<'a>(a: &'a [&str]) -> impl Iterator<Item = String> + 'a {
+                a.into_iter().map(|v| v.to_string())
             }
-            let t = top.into_iter().map(|v| v.to_string());
-            let b = bottom.into_iter().map(|v| v.to_string());
-            fs::write(path, t.chain(content).chain(b).join("\n")).unwrap();
         }
     }
-    /*
-    {
-        let r = Regex::new("#include <../../_p256k1.h>").unwrap();
-        let path = Path::new("./secp256k1");
-        let src = read_dir_recursive(&path.join("src"));
-        let include = read_dir_recursive(&path.join("include"));
-        let all = src.into_iter().chain(include.into_iter()).collect::<Vec<_>>();
-        write("_regex_report.txt", format!("{:?}", all)).unwrap();
-        for i in all {
-            let text = read_to_string(i).unwrap();
-            let new_text = r.replace_all(&text, "p256k1v3_0_0_").to_string();
-            // fs::write(i, new_text).unwrap();
-        }
-    }
-    */
 
     //
     println!("cargo:rustc-env=ECMULT_GEN_PREC_BITS=4");
@@ -104,55 +138,34 @@ fn main() {
     println!("cargo:rerun-if-changed=wrapper.h");
     println!("cargo:rustc-link-lib=secp256k1");
 
-    // The bindgen::Builder is the main entry point
-    // to bindgen, and lets you build up options for
-    // the resulting bindings.
-    let bindings = bindgen::Builder::default()
-        // The input header we would like to generate
-        // bindings for.
-        .header("wrapper.h")
-        // Tell cargo to invalidate the built crate whenever any of the
-        // included header files changed.
-        .parse_callbacks(Box::new(bindgen::CargoCallbacks))
-        // Finish the builder and generate the bindings.
-        .generate()
-        // Unwrap the Result and panic on failure.
-        .expect("Unable to generate bindings");
-
     let bindings_file = &format!("{}/bindings.rs", env::var("OUT_DIR").unwrap());
 
-    // Write the bindings to the $OUT_DIR/bindings.rs file.
-    bindings
-        .write_to_file(bindings_file)
-        .expect("Couldn't write bindings!");
+    save_bindings(&bindings_file);
 
     let serializable_types = ["secp256k1_scalar", "secp256k1_fe", "secp256k1_gej"];
 
-    add_serde_derive_attributes(&serializable_types, bindings_file)
+    let add_serde_derive_attributes = |to_type_definitions: &[&str],
+                                       syntax: syn::File|
+     -> Result<(), Error> {
+        let type_identifiers: HashSet<_> = to_type_definitions
+            .iter()
+            .map(|name| proc_macro2::Ident::new(name, proc_macro2::Span::call_site()))
+            .collect();
+
+        let token_stream_with_added_derives = add_serde_derive_tokens(&type_identifiers, &syntax);
+
+        let formatted_output = rustfmt_wrapper::rustfmt(proc_macro2::TokenStream::from_iter(
+            token_stream_with_added_derives,
+        ))
+        .map_err(Error::Format)?;
+
+        std::fs::write(bindings_file, formatted_output).map_err(Error::Io)?;
+
+        Ok(())
+    };
+
+    add_serde_derive_attributes(&serializable_types, read_syntax(bindings_file))
         .expect("Failed to add serde derive to type definitions");
-}
-
-fn add_serde_derive_attributes<P: AsRef<std::path::Path>>(
-    to_type_definitions: &[&str],
-    file_path: P,
-) -> Result<(), Error> {
-    let file_content = std::fs::read_to_string(&file_path).map_err(Error::Io)?;
-    let syntax = syn::parse_file(&file_content).map_err(Error::Syntax)?;
-    let type_identifiers: HashSet<_> = to_type_definitions
-        .iter()
-        .map(|name| proc_macro2::Ident::new(name, proc_macro2::Span::call_site()))
-        .collect();
-
-    let token_stream_with_added_derives = add_serde_derive_tokens(&type_identifiers, &syntax);
-
-    let formatted_output = rustfmt_wrapper::rustfmt(proc_macro2::TokenStream::from_iter(
-        token_stream_with_added_derives,
-    ))
-    .map_err(Error::Format)?;
-
-    std::fs::write(&file_path, formatted_output).map_err(Error::Io)?;
-
-    Ok(())
 }
 
 #[derive(Debug)]
