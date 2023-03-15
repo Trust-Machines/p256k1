@@ -1,8 +1,8 @@
-use crate::bindings::{
-    secp256k1_ec_pubkey_create, secp256k1_ecdsa_sign, secp256k1_ecdsa_signature,
-    secp256k1_ecdsa_signature_parse_compact, secp256k1_ecdsa_signature_serialize_compact,
-    secp256k1_ecdsa_verify, secp256k1_pubkey,
+use crate::_rename::{
+    secp256k1_ec_pubkey_create, secp256k1_ecdsa_sign, secp256k1_ecdsa_signature_parse_compact,
+    secp256k1_ecdsa_signature_serialize_compact, secp256k1_ecdsa_verify,
 };
+use crate::bindings::{secp256k1_ecdsa_signature, secp256k1_pubkey};
 use crate::context::Context;
 use crate::scalar::Scalar;
 use std::array::TryFromSliceError;

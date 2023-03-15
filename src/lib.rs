@@ -14,6 +14,8 @@ mod bindings {
     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 }
 
+mod _rename;
+
 /// secp256k1 context operations
 pub mod context;
 
