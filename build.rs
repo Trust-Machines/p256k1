@@ -6,46 +6,53 @@ use std::{env, fs};
 
 use quote::ToTokens;
 
-fn prefix(v: &str) -> String {
-    format!("prefix_{v}")
-}
-
 fn main() {
     // fix secp256k1 source code.
     {
-        let mut c = [
-            "secp256k1_context_static",
-            "secp256k1_context_no_precomp",
-            "secp256k1_selftest",
-            "secp256k1_context_create",
-            "secp256k1_context_clone",
-            "secp256k1_context_destroy",
-            "secp256k1_context_set_illegal_callback",
-            "secp256k1_context_set_error_callback",
-            "secp256k1_scratch_space_create",
-            "secp256k1_scratch_space_destroy",
-            "secp256k1_ec_pubkey_parse",
-        ];
+        let c = {
+            let mut c = [
+                "secp256k1_context_static",
+                "secp256k1_context_no_precomp",
+                "secp256k1_selftest",
+                "secp256k1_context_create",
+                "secp256k1_context_clone",
+                "secp256k1_context_destroy",
+                "secp256k1_context_set_illegal_callback",
+                "secp256k1_context_set_error_callback",
+                "secp256k1_scratch_space_create",
+                "secp256k1_scratch_space_destroy",
+                "secp256k1_ec_pubkey_parse",
+            ];
+            c.sort();
+            c
+        };
 
-        c.sort();
+        write_file(
+            "./_p256k1.h",
+            &["#ifndef P256K1_H", "#define P256K1_H"],
+            c.into_iter().map(|v| format!("#define {v} {}", prefix(v))),
+            &["#endif", ""],
+        );
+        write_file(
+            "./src/_rename.rs",
+            &["pub use crate::bindings::{"],
+            c.into_iter().map(|v| format!("    {} as {v},", prefix(v))),
+            &["};", ""],
+        );
 
-        {
-            let top = &["#ifndef P256K1_H", "#define P256K1_H"].map(str::to_string);
-
-            let bottom = &["#endif", ""].map(str::to_string);
-
-            let d = &c.map(|v| format!("#define {v} {}", prefix(v)));
-
-            let text = top.iter().chain(d).chain(bottom).join("\n");
-            fs::write("./_p256k1.h", text).unwrap();
+        fn prefix(v: &str) -> String {
+            format!("p256k1_3_0_1_{v}")
         }
-        {
-            let top = &["pub use crate::bindings::{"].map(str::to_string);
-            let bottom = &["};", ""].map(str::to_string);
-            let d = &c.map(|v| format!("    {} as {v},", prefix(v)));
 
-            let text = top.iter().chain(d).chain(bottom).join("\n");
-            fs::write("./src/_rename.rs", text).unwrap();
+        fn write_file(
+            path: &str,
+            top: &[&str],
+            content: impl Iterator<Item = String>,
+            bottom: &[&str],
+        ) {
+            let t = top.into_iter().map(|v| v.to_string());
+            let b = bottom.into_iter().map(|v| v.to_string());
+            fs::write(path, t.chain(content).chain(b).join("\n")).unwrap();
         }
     }
     /*
