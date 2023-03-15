@@ -38,6 +38,10 @@ fn main() {
     };
 
     {
+        let version = env::var("CARGO_PKG_VERSION").unwrap().replace('.', "_");
+
+        let prefix = |v| -> String { format!("p256k1_{version}{v}") };
+
         write_file(
             PREFIX_FILE,
             &["#ifndef P256K1_H", "#define P256K1_H"],
@@ -50,10 +54,6 @@ fn main() {
             list.iter().map(|v| format!("    {} as {v},", prefix(v))),
             &["};", ""],
         );
-
-        fn prefix(v: &str) -> String {
-            format!("p256k1_3_0_1_{v}")
-        }
 
         fn write_file(
             path: &str,
