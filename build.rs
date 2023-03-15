@@ -1,6 +1,6 @@
 use itertools::Itertools;
-use syn::{Item, ForeignItem, Ident};
 use std::collections::HashSet;
+use syn::{ForeignItem, Ident, Item};
 
 use std::iter::FromIterator;
 use std::{env, fs};
@@ -59,7 +59,7 @@ fn main() {
                     match i {
                         ForeignItem::Fn(f) => push(f.sig.ident),
                         ForeignItem::Static(s) => push(s.ident),
-                        _ => {},
+                        _ => {}
                     }
                 }
             }
@@ -72,17 +72,13 @@ fn main() {
         write_file(
             PREFIX_FILE,
             &["#ifndef P256K1_H", "#define P256K1_H"],
-            list
-                .iter()
-                .map(|v| format!("#define {v} {}", prefix(&v))),
+            list.iter().map(|v| format!("#define {v} {}", prefix(&v))),
             &["#endif", ""],
         );
         write_file(
             "./src/_rename.rs",
             &["pub use crate::bindings::{"],
-            list
-                .iter()
-                .map(|v| format!("    {} as {v},", prefix(&v))),
+            list.iter().map(|v| format!("    {} as {v},", prefix(&v))),
             &["};", ""],
         );
 
