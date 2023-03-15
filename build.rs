@@ -50,6 +50,9 @@ fn main() {
             content: impl Iterator<Item = String>,
             bottom: &[&str],
         ) {
+            fn to_iter(a: &str) {
+
+            }
             let t = top.into_iter().map(|v| v.to_string());
             let b = bottom.into_iter().map(|v| v.to_string());
             fs::write(path, t.chain(content).chain(b).join("\n")).unwrap();
