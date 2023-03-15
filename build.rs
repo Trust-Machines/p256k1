@@ -8,37 +8,6 @@ use std::{env, fs};
 use quote::ToTokens;
 
 fn main() {
-    let save_bindings = |path: &str| {
-        // The bindgen::Builder is the main entry point
-        // to bindgen, and lets you build up options for
-        // the resulting bindings.
-        let bindings = bindgen::Builder::default()
-            // The input header we would like to generate
-            // bindings for.
-            .header("wrapper.h")
-            // Tell cargo to invalidate the built crate whenever any of the
-            // included header files changed.
-            .parse_callbacks(Box::new(bindgen::CargoCallbacks))
-            // Finish the builder and generate the bindings.
-            .generate()
-            // Unwrap the Result and panic on failure.
-            .expect("Unable to generate bindings");
-
-        // Write the bindings to the $OUT_DIR/bindings.rs file.
-        bindings
-            .write_to_file(path)
-            .expect("Couldn't write bindings!");
-    };
-
-    let read_syntax = |s: &str| {
-        let file_content = std::fs::read_to_string(s)
-            .map_err(Error::Io)
-            .expect("Couldn't open write");
-        syn::parse_file(&file_content)
-            .map_err(Error::Syntax)
-            .expect("Couldn't parse the bindings")
-    };
-
     const TMP_BINDINGS: &str = "./_tmp_bindings.rs";
     const PREFIX_FILE: &str = "./_p256k1.h";
 
@@ -162,6 +131,37 @@ fn main() {
 
     add_serde_derive_attributes(&serializable_types, read_syntax(bindings_file))
         .expect("Failed to add serde derive to type definitions");
+}
+
+fn save_bindings(path: &str) {
+    // The bindgen::Builder is the main entry point
+    // to bindgen, and lets you build up options for
+    // the resulting bindings.
+    let bindings = bindgen::Builder::default()
+        // The input header we would like to generate
+        // bindings for.
+        .header("wrapper.h")
+        // Tell cargo to invalidate the built crate whenever any of the
+        // included header files changed.
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+        // Finish the builder and generate the bindings.
+        .generate()
+        // Unwrap the Result and panic on failure.
+        .expect("Unable to generate bindings");
+
+    // Write the bindings to the $OUT_DIR/bindings.rs file.
+    bindings
+        .write_to_file(path)
+        .expect("Couldn't write bindings!");
+}
+
+fn read_syntax(path: &str) -> syn::File {
+    let file_content = std::fs::read_to_string(path)
+        .map_err(Error::Io)
+        .expect("Couldn't open write");
+    syn::parse_file(&file_content)
+        .map_err(Error::Syntax)
+        .expect("Couldn't parse the bindings")
 }
 
 #[derive(Debug)]
