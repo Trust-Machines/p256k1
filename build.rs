@@ -40,7 +40,7 @@ fn main() {
     {
         let version = env::var("CARGO_PKG_VERSION").unwrap().replace('.', "_");
 
-        let prefix = |v| -> String { format!("p256k1_{version}{v}") };
+        let prefix = |v| -> String { format!("p256k1_{version}_{v}") };
 
         write_file(
             PREFIX_FILE,
