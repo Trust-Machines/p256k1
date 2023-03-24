@@ -1,8 +1,9 @@
 use crate::_rename::{
-    secp256k1_ec_pubkey_create, secp256k1_ecdsa_sign, secp256k1_ecdsa_signature_parse_compact,
+    secp256k1_ec_pubkey_create, secp256k1_ec_pubkey_parse, secp256k1_ec_pubkey_serialize,
+    secp256k1_ecdsa_sign, secp256k1_ecdsa_signature_parse_compact,
     secp256k1_ecdsa_signature_serialize_compact, secp256k1_ecdsa_verify,
 };
-use crate::bindings::{secp256k1_ecdsa_signature, secp256k1_pubkey};
+use crate::bindings::{secp256k1_ecdsa_signature, secp256k1_pubkey, SECP256K1_EC_COMPRESSED};
 use crate::context::Context;
 use crate::scalar::Scalar;
 use std::array::TryFromSliceError;
@@ -12,6 +13,8 @@ use std::array::TryFromSliceError;
 pub enum Error {
     /// Error occurred due to invalid secret key
     InvalidSecretKey,
+    /// Error occurred due to invalid public key
+    InvalidPublicKey,
     /// Error occurred during a try from operation
     TryFrom(String),
 }
@@ -44,6 +47,47 @@ impl PubKey {
             return Err(Error::InvalidSecretKey);
         }
         Ok(pub_key)
+    }
+
+    /// Serialize the key to a compressed byte array
+    pub fn to_bytes(&self) -> [u8; 33] {
+        let ctx = Context::default();
+        let mut bytes = [0u8; 33];
+        let mut len = bytes.len();
+
+        unsafe {
+            secp256k1_ec_pubkey_serialize(
+                ctx.context,
+                bytes.as_mut_ptr(),
+                &mut len,
+                &self.key,
+                SECP256K1_EC_COMPRESSED,
+            );
+        }
+
+        bytes
+    }
+}
+
+impl TryFrom<&[u8]> for PubKey {
+    type Error = Error;
+    /// Create a pubkey from the passed byte slice
+    fn try_from(input: &[u8]) -> Result<Self, Self::Error> {
+        let mut pubkey = Self {
+            key: secp256k1_pubkey { data: [0; 64] },
+        };
+        let ctx = Context::default();
+        unsafe {
+            match secp256k1_ec_pubkey_parse(
+                ctx.context,
+                &mut pubkey.key,
+                input.as_ptr(),
+                input.len(),
+            ) {
+                1 => Ok(pubkey),
+                _ => Err(Error::InvalidPublicKey),
+            }
+        }
     }
 }
 
@@ -169,7 +213,7 @@ mod tests {
     }
 
     #[test]
-    fn from() {
+    fn signature_from() {
         // Create random data bytes to serialize
         let mut rng = OsRng::default();
         let mut bytes = [0u8; 64];
@@ -196,7 +240,7 @@ mod tests {
     }
 
     #[test]
-    fn serialize_deserialize() {
+    fn signature_serde() {
         // Generate random data bytes
         let mut rng = OsRng::default();
         let mut bytes = [0u8; 64];
@@ -206,5 +250,18 @@ mod tests {
         let sig = Signature::try_from(bytes).unwrap();
         assert_ne!(sig.signature.data, bytes);
         assert_eq!(sig.to_bytes(), bytes);
+    }
+
+    #[test]
+    fn pubkey_serde() {
+        // Generate a secret and public key
+        let mut rnd = OsRng::default();
+        let sec_key = Scalar::random(&mut rnd);
+        let pub_key = PubKey::new(&sec_key).unwrap();
+
+        //Serialize with try_from and deseriailze with to_bytes
+        let pub_key_2 = PubKey::try_from(pub_key.to_bytes().as_slice()).unwrap();
+        assert_eq!(pub_key_2.to_bytes(), pub_key.to_bytes());
+        assert_eq!(pub_key_2.key.data, pub_key.key.data);
     }
 }
