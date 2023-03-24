@@ -1,6 +1,7 @@
 use crate::_rename::{
-    secp256k1_ec_pubkey_create, secp256k1_ecdsa_sign, secp256k1_ecdsa_signature_parse_compact,
-    secp256k1_ecdsa_signature_serialize_compact, secp256k1_ecdsa_verify,
+    secp256k1_ec_pubkey_create, secp256k1_ec_pubkey_parse, secp256k1_ec_pubkey_serialize,
+    secp256k1_ecdsa_sign, secp256k1_ecdsa_signature_parse_compact,
+    secp256k1_ecdsa_signature_serialize_compact, secp256k1_ecdsa_verify, SECP256K1_EC_COMPRESSED,
 };
 use crate::bindings::{secp256k1_ecdsa_signature, secp256k1_pubkey};
 use crate::context::Context;
@@ -12,6 +13,8 @@ use std::array::TryFromSliceError;
 pub enum Error {
     /// Error occurred due to invalid secret key
     InvalidSecretKey,
+    /// Error occurred due to invalid public key
+    InvalidPublicKey,
     /// Error occurred during a try from operation
     TryFrom(String),
 }
@@ -44,6 +47,47 @@ impl PubKey {
             return Err(Error::InvalidSecretKey);
         }
         Ok(pub_key)
+    }
+
+    /// Serialize the key to a compressed byte array
+    pub fn to_bytes(&self) -> [u8; 33] {
+        let ctx = Context::default();
+        let mut bytes = [0u8; 33];
+        let mut len = bytes.len();
+
+        unsafe {
+            secp256k1_ec_pubkey_serialize(
+                ctx.context,
+                bytes.as_mut_ptr(),
+                &mut len,
+                &self.key,
+                SECP256K1_EC_COMPRESSED,
+            );
+        }
+
+        bytes
+    }
+}
+
+impl TryFrom<&[u8]> for PubKey {
+    type Error = Error;
+    /// Create a pubkey from the passed byte slice
+    fn try_from(input: &[u8]) -> Result<Self, Self::Error> {
+        let mut pubkey = Self {
+            key: secp256k1_pubkey { data: [0; 64] },
+        };
+        let ctx = Context::default();
+        unsafe {
+            match secp256k1_ec_pubkey_parse(
+                ctx.context,
+                &mut pubkey.key,
+                input.as_ptr(),
+                input.len(),
+            ) {
+                1 => Ok(pubkey),
+                _ => Err(Error::InvalidPublicKey),
+            }
+        }
     }
 }
 
