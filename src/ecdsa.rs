@@ -213,7 +213,7 @@ mod tests {
     }
 
     #[test]
-    fn from() {
+    fn signature_from() {
         // Create random data bytes to serialize
         let mut rng = OsRng::default();
         let mut bytes = [0u8; 64];
@@ -240,7 +240,7 @@ mod tests {
     }
 
     #[test]
-    fn serialize_deserialize() {
+    fn signature_serde() {
         // Generate random data bytes
         let mut rng = OsRng::default();
         let mut bytes = [0u8; 64];
@@ -250,5 +250,18 @@ mod tests {
         let sig = Signature::try_from(bytes).unwrap();
         assert_ne!(sig.signature.data, bytes);
         assert_eq!(sig.to_bytes(), bytes);
+    }
+
+    #[test]
+    fn pubkey_serde() {
+        // Generate a secret and public key
+        let mut rnd = OsRng::default();
+        let sec_key = Scalar::random(&mut rnd);
+        let pub_key = PubKey::new(&sec_key).unwrap();
+
+        //Serialize with try_from and deseriailze with to_bytes
+        let pub_key_2 = PubKey::try_from(pub_key.to_bytes().as_slice()).unwrap();
+        assert_eq!(pub_key_2.to_bytes(), pub_key.to_bytes());
+        assert_eq!(pub_key_2.key.data, pub_key.key.data);
     }
 }
