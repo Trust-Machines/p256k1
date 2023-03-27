@@ -9,7 +9,7 @@ use quote::ToTokens;
 
 fn main() {
     const TMP_BINDINGS: &str = "./_tmp_bindings.rs";
-    const PREFIX_FILE: &str = "./_p256k1.h";
+    const PREFIX_FILE: &str = "../_p256k1.h";
 
     fs::write(PREFIX_FILE, "").unwrap();
     save_bindings(TMP_BINDINGS);
@@ -79,9 +79,9 @@ fn main() {
 
     let mut base_config = cc::Build::new();
     base_config
-        .include("secp256k1/")
-        .include("secp256k1/include")
-        .include("secp256k1/src")
+        .include("../secp256k1/")
+        .include("../secp256k1/include")
+        .include("../secp256k1/src")
         .flag_if_supported("-Wno-unused-function") // some ecmult stuff is defined but not used upstream
         .define("SECP256K1_API", Some(""))
         .define("ENABLE_MODULE_ECDH", Some("1"))
@@ -94,13 +94,13 @@ fn main() {
         .define("ECMULT_WINDOW_SIZE", Some("15"));
 
     base_config
-        .file("secp256k1/src/secp256k1.c")
-        .file("secp256k1/src/precomputed_ecmult.c")
-        .file("secp256k1/src/precomputed_ecmult_gen.c")
+        .file("../secp256k1/src/secp256k1.c")
+        .file("../secp256k1/src/precomputed_ecmult.c")
+        .file("../secp256k1/src/precomputed_ecmult_gen.c")
         .compile("libsecp256k1.a");
 
     // Tell cargo to invalidate the built crate whenever the wrapper changes
-    println!("cargo:rerun-if-changed=wrapper.h");
+    println!("cargo:rerun-if-changed=../wrapper.h");
     println!("cargo:rustc-link-lib=secp256k1");
 
     let bindings_file = &format!("{}/bindings.rs", env::var("OUT_DIR").unwrap());
@@ -140,7 +140,7 @@ fn save_bindings(path: &str) {
     let bindings = bindgen::Builder::default()
         // The input header we would like to generate
         // bindings for.
-        .header("wrapper.h")
+        .header("../wrapper.h")
         // Tell cargo to invalidate the built crate whenever any of the
         // included header files changed.
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
