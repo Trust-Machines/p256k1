@@ -15,7 +15,7 @@ use crate::_rename::{
     secp256k1_fe_is_odd, secp256k1_fe_mul, secp256k1_fe_negate, secp256k1_fe_normalize,
     secp256k1_fe_normalize_var, secp256k1_fe_set_b32, secp256k1_fe_set_int,
 };
-use crate::bindings::secp256k1_fe;
+use crate::_bindings::secp256k1_fe;
 
 use crate::scalar::Scalar;
 

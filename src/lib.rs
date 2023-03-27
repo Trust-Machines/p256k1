@@ -10,10 +10,7 @@
 #[allow(deref_nullptr)]
 #[allow(improper_ctypes)]
 #[allow(clippy::all)]
-mod bindings {
-    include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
-}
-
+mod _bindings;
 mod _rename;
 
 /// secp256k1 context operations
