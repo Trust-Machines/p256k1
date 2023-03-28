@@ -1,0 +1,16 @@
+# Update `secp256k1` Source Code
+
+The document provides the steps to update the `secp256k1` source code used in this project.
+
+## Updating the Source Code
+
+1. Update the `COMMIT_SHA` in [src/main.rs#L9](src/main.rs) to the desired commit hash.
+2. Execute the following command to download and update the [p256k1/_secp256k1](p256k1/_secp256k1) directory:
+   ```shell
+   cargo run --bin update
+   ```
+3. Review the changes, then commit and push them to the repository branch.
+
+## Repository Conventions
+
+- Files with an `_` prefix (e.g., `_filename.ext`) should not be edited manually. These files are automatically generated and any manual changes may be overwritten.
