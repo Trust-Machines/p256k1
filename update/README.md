@@ -10,7 +10,3 @@ The document provides the steps to update the `secp256k1` source code used in th
    cargo run --bin update
    ```
 3. Review the changes, then commit and push them to the repository branch.
-
-## Repository Conventions
-
-- Files with an `_` prefix (e.g., `_filename.ext`) should not be edited manually. These files are automatically generated and any manual changes may be overwritten.
