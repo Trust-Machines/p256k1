@@ -85,4 +85,5 @@ jobs:
           override: true
       - uses: actions-rs/cargo@v1
         with:
-          command: publish --dry-run -p p256k1
+          command: publish
+          args: --dry-run -p p256k1
