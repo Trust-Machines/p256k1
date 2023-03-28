@@ -21,19 +21,19 @@ fn main() {
         Command::new("curl")
             .arg("-L")
             .arg("-o")
-            .arg(&ZIP)
+            .arg(ZIP)
             .arg(&url)
             .status_unwrap();
 
         const TMP_DIR: &str = "tmp";
         Command::new("unzip")
             .arg("-d")
-            .arg(&TMP_DIR)
-            .arg(&ZIP)
+            .arg(TMP_DIR)
+            .arg(ZIP)
             .status_unwrap();
-        fs::remove_file(&ZIP).unwrap();
+        fs::remove_file(ZIP).unwrap();
         fs::rename(format!("{TMP_DIR}/{REPO_NAME}-{COMMIT_SHA}"), &output_dir).unwrap();
-        fs::remove_dir_all(&TMP_DIR).unwrap();
+        fs::remove_dir_all(TMP_DIR).unwrap();
     }
 
     //
@@ -66,7 +66,7 @@ fn main() {
             v.sort();
             v
         };
-        fs::remove_file(&TMP_BINDINGS).unwrap();
+        fs::remove_file(TMP_BINDINGS).unwrap();
         list
     };
 
