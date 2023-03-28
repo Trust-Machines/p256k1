@@ -9,9 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: Mushus/checkout-submodule@v1.0.1
-        with:
-          submodulePath: secp256k1
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -26,9 +23,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: Mushus/checkout-submodule@v1.0.1
-        with:
-          submodulePath: secp256k1
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -47,9 +41,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: Mushus/checkout-submodule@v1.0.1
-        with:
-          submodulePath: secp256k1
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -69,9 +60,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: Mushus/checkout-submodule@v1.0.1
-        with:
-          submodulePath: secp256k1
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -85,3 +73,17 @@ jobs:
         with:
           command: clippy
           args: -- -D warnings -A clippy::op-ref -A clippy::needless-range-loop -A clippy::suspicious-arithmetic-impl -A clippy::suspicious-op-assign-impl
+
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: publish
+          args: --dry-run -p p256k1

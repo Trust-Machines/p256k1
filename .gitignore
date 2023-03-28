@@ -1,5 +1,4 @@
-/target
+target/
 *~
 src/bindings.rs
 Cargo.lock
-_*

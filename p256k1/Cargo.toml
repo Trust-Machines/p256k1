@@ -1,0 +1,50 @@
+[package]
+name = "p256k1"
+version = "4.0.0"
+edition = "2021"
+authors = ["Joey Yandle <xoloki@gmail.com>"]
+license = "Apache-2.0"
+description = "Rust wrappers around libsecp256k1 which expose internal scalar and point APIs"
+readme = "../README.md"
+repository = "https://github.com/Trust-Machines/p256k1/"
+keywords = ["cryptography", "crypto", "secp256k1"]
+categories = ["api-bindings", "cryptography", "mathematics"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+base58 = "0.2"
+bitvec = "1.0.1"
+hex = "0.4"
+num-traits = "0.2"
+primitive-types = "0.12"
+rand_core = { version = "0.6", features = ["getrandom"] }
+serde = { version = "1.0", features = ["derive"] }
+sha2 = "0.10"
+
+[build-dependencies]
+bindgen = "0.64.0"
+cc = "1.0.79"
+
+# For serde derives
+itertools = "0.10.5"
+proc-macro2 = "1.0.4"
+quote = "1.0.21"
+rustfmt-wrapper = "0.2.0"
+syn = { version = "2.0.10", features = ["full"] }
+
+[dev-dependencies]
+libc = "0.2"
+criterion = "0.4.0"
+
+[[bench]]
+name = "point_bench"
+harness = false
+
+[lib]
+path = "src/lib.rs"    # The source file of the target.
+crate-type = ["lib"]   # The crate types to generate.
+
+[[bin]]
+name = "main"
+path = "src/main.rs"

@@ -1,87 +1,20 @@
 use itertools::Itertools;
-use std::collections::HashSet;
-use syn::{ForeignItem, Ident, Item};
-
-use std::iter::FromIterator;
-use std::{env, fs};
-
 use quote::ToTokens;
+use std::{collections::HashSet, env};
 
 fn main() {
-    const TMP_BINDINGS: &str = "./_tmp_bindings.rs";
-    const PREFIX_FILE: &str = "./_p256k1.h";
-
-    fs::write(PREFIX_FILE, "").unwrap();
-    save_bindings(TMP_BINDINGS);
-
-    let list = {
-        let mut v = Vec::default();
-        let mut push = |x: Ident| {
-            let s = x.to_string();
-            if s.starts_with("secp256k1_") {
-                v.push(s);
-            }
-        };
-        for i in read_syntax(TMP_BINDINGS).items {
-            if let Item::ForeignMod(m) = i {
-                for i in m.items {
-                    match i {
-                        ForeignItem::Fn(f) => push(f.sig.ident),
-                        ForeignItem::Static(s) => push(s.ident),
-                        _ => {}
-                    }
-                }
-            }
-        }
-        v.sort();
-        v
-    };
-
-    {
-        let version = env::var("CARGO_PKG_VERSION").unwrap().replace('.', "_");
-
-        let prefix = |v| -> String { format!("p256k1_{version}_{v}") };
-
-        write_file(
-            PREFIX_FILE,
-            &["#ifndef P256K1_H", "#define P256K1_H"],
-            list.iter().map(|v| format!("#define {v} {}", prefix(v))),
-            &["#endif", ""],
-        );
-        write_file(
-            "./src/_rename.rs",
-            &["pub use crate::bindings::{"],
-            list.iter().map(|v| format!("    {} as {v},", prefix(v))),
-            &["};", ""],
-        );
-
-        fn write_file(
-            path: &str,
-            top: &[&str],
-            content: impl Iterator<Item = String>,
-            bottom: &[&str],
-        ) {
-            fs::write(
-                path,
-                iter(top).chain(content).chain(iter(bottom)).join("\n"),
-            )
-            .unwrap();
-
-            fn iter<'a>(a: &'a [&str]) -> impl Iterator<Item = String> + 'a {
-                a.iter().map(|v| v.to_string())
-            }
-        }
-    }
-
     //
     println!("cargo:rustc-env=ECMULT_GEN_PREC_BITS=4");
     println!("cargo:rustc-env=ECMULT_WINDOW_SIZE=15");
 
+    const PATH: &str = "./_secp256k1/";
+    let path = |v: &str| format!("{PATH}{}", v);
+
     let mut base_config = cc::Build::new();
     base_config
-        .include("secp256k1/")
-        .include("secp256k1/include")
-        .include("secp256k1/src")
+        .include(PATH)
+        .include(path("include"))
+        .include(path("src"))
         .flag_if_supported("-Wno-unused-function") // some ecmult stuff is defined but not used upstream
         .define("SECP256K1_API", Some(""))
         .define("ENABLE_MODULE_ECDH", Some("1"))
@@ -94,9 +27,9 @@ fn main() {
         .define("ECMULT_WINDOW_SIZE", Some("15"));
 
     base_config
-        .file("secp256k1/src/secp256k1.c")
-        .file("secp256k1/src/precomputed_ecmult.c")
-        .file("secp256k1/src/precomputed_ecmult_gen.c")
+        .file(path("src/secp256k1.c"))
+        .file(path("src/precomputed_ecmult.c"))
+        .file(path("src/precomputed_ecmult_gen.c"))
         .compile("libsecp256k1.a");
 
     // Tell cargo to invalidate the built crate whenever the wrapper changes
@@ -104,14 +37,11 @@ fn main() {
     println!("cargo:rustc-link-lib=secp256k1");
 
     let bindings_file = &format!("{}/bindings.rs", env::var("OUT_DIR").unwrap());
-
     save_bindings(bindings_file);
 
     let serializable_types = ["secp256k1_scalar", "secp256k1_fe", "secp256k1_gej"];
 
-    let add_serde_derive_attributes = |to_type_definitions: &[&str],
-                                       syntax: syn::File|
-     -> Result<(), Error> {
+    let add_serde_derive_attributes = |to_type_definitions: &[&str], syntax: syn::File| {
         let type_identifiers: HashSet<_> = to_type_definitions
             .iter()
             .map(|name| proc_macro2::Ident::new(name, proc_macro2::Span::call_site()))
@@ -122,15 +52,17 @@ fn main() {
         let formatted_output = rustfmt_wrapper::rustfmt(proc_macro2::TokenStream::from_iter(
             token_stream_with_added_derives,
         ))
-        .map_err(Error::Format)?;
+        .unwrap();
 
-        std::fs::write(bindings_file, formatted_output).map_err(Error::Io)?;
-
-        Ok(())
+        std::fs::write(bindings_file, formatted_output).unwrap();
     };
 
-    add_serde_derive_attributes(&serializable_types, read_syntax(bindings_file))
-        .expect("Failed to add serde derive to type definitions");
+    add_serde_derive_attributes(&serializable_types, read_syntax(bindings_file));
+}
+
+fn read_syntax(path: &str) -> syn::File {
+    let file_content = std::fs::read_to_string(path).unwrap();
+    syn::parse_file(&file_content).unwrap()
 }
 
 fn save_bindings(path: &str) {
@@ -140,35 +72,16 @@ fn save_bindings(path: &str) {
     let bindings = bindgen::Builder::default()
         // The input header we would like to generate
         // bindings for.
-        .header("wrapper.h")
+        .header("./wrapper.h")
         // Tell cargo to invalidate the built crate whenever any of the
         // included header files changed.
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         // Finish the builder and generate the bindings.
         .generate()
-        // Unwrap the Result and panic on failure.
-        .expect("Unable to generate bindings");
+        .unwrap();
 
     // Write the bindings to the $OUT_DIR/bindings.rs file.
-    bindings
-        .write_to_file(path)
-        .expect("Couldn't write bindings!");
-}
-
-fn read_syntax(path: &str) -> syn::File {
-    let file_content = std::fs::read_to_string(path)
-        .map_err(Error::Io)
-        .expect("Couldn't open write");
-    syn::parse_file(&file_content)
-        .map_err(Error::Syntax)
-        .expect("Couldn't parse the bindings")
-}
-
-#[derive(Debug)]
-enum Error {
-    Io(std::io::Error),
-    Syntax(syn::Error),
-    Format(rustfmt_wrapper::Error),
+    bindings.write_to_file(path).unwrap();
 }
 
 fn add_serde_derive_tokens<'a>(
