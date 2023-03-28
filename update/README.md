@@ -9,4 +9,5 @@ The document provides the steps to update the `secp256k1` source code used in th
    ```shell
    cargo run --bin update
    ```
-3. Review the changes, then commit and push them to the repository branch.
+3. Review the changes, then commit and push them to a new branch.
+4. Make a Pull Request.
