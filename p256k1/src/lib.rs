@@ -1,5 +1,5 @@
 #![deny(missing_docs)]
-#![doc = include_str!("../../README.md")]
+#![doc = include_str!("../README.md")]
 
 #[allow(non_snake_case)]
 #[allow(non_camel_case_types)]
