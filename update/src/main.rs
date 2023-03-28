@@ -10,7 +10,7 @@ fn main() {
 
     let url = format!("https://github.com/{USER}/{REPO_NAME}/archive/{COMMIT_SHA}.zip");
 
-    let output_dir = format!("./{REPO_NAME}");
+    let output_dir = format!("./_{REPO_NAME}");
     if Path::new(&output_dir).exists() {
         fs::remove_dir_all(&output_dir).unwrap();
     }
