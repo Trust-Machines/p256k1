@@ -10,12 +10,12 @@ use core::{
 use num_traits::{One, Zero};
 use rand_core::{CryptoRng, RngCore};
 
-use crate::bindings::secp256k1_scalar;
 use crate::_rename::{
     secp256k1_ecmult, secp256k1_scalar_add, secp256k1_scalar_eq, secp256k1_scalar_get_b32,
     secp256k1_scalar_inverse, secp256k1_scalar_mul, secp256k1_scalar_negate,
     secp256k1_scalar_set_b32, secp256k1_scalar_set_int,
 };
+use crate::bindings::secp256k1_scalar;
 
 use crate::point::Point;
 
