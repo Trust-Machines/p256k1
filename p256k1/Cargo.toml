@@ -31,7 +31,7 @@ itertools = "0.10.5"
 proc-macro2 = "1.0.4"
 quote = "1.0.21"
 rustfmt-wrapper = "0.2.0"
-syn = { version = "1.0.105", features = ["full"] }
+syn = { version = "2.0.10", features = ["full"] }
 
 [dev-dependencies]
 libc = "0.2"

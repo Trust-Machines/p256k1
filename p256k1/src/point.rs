@@ -13,7 +13,7 @@ use num_traits::Zero;
 use primitive_types::U256;
 use std::os::raw::c_void;
 
-use crate::_bindings::{
+use crate::bindings::{
     secp256k1_callback, secp256k1_ecmult_multi_callback, secp256k1_fe, secp256k1_ge, secp256k1_gej,
     secp256k1_scalar, SECP256K1_TAG_PUBKEY_EVEN, SECP256K1_TAG_PUBKEY_ODD,
 };

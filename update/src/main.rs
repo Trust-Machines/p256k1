@@ -1,7 +1,6 @@
 use itertools::Itertools;
-use std::{collections::HashSet, fs, path::Path, process::Command};
+use std::{fs, path::Path, process::Command};
 
-use quote::ToTokens;
 use syn::{ForeignItem, Ident, Item};
 
 fn main() {
@@ -83,7 +82,7 @@ fn main() {
         );
         write_file(
             "./p256k1/src/_rename.rs",
-            &["pub use crate::_bindings::{"],
+            &["pub use crate::bindings::{"],
             list.iter().map(|v| format!("    {} as {v},", prefix(v))),
             &["};", ""],
         );
@@ -105,29 +104,6 @@ fn main() {
             }
         }
     }
-
-    const BINDINGS_FILE: &str = "./p256k1/src/_bindings.rs";
-    save_bindings(BINDINGS_FILE);
-
-    let serializable_types = ["secp256k1_scalar", "secp256k1_fe", "secp256k1_gej"];
-
-    let add_serde_derive_attributes = |to_type_definitions: &[&str], syntax: syn::File| {
-        let type_identifiers: HashSet<_> = to_type_definitions
-            .iter()
-            .map(|name| proc_macro2::Ident::new(name, proc_macro2::Span::call_site()))
-            .collect();
-
-        let token_stream_with_added_derives = add_serde_derive_tokens(&type_identifiers, &syntax);
-
-        let formatted_output = rustfmt_wrapper::rustfmt(proc_macro2::TokenStream::from_iter(
-            token_stream_with_added_derives,
-        ))
-        .unwrap();
-
-        std::fs::write(BINDINGS_FILE, formatted_output).unwrap();
-    };
-
-    add_serde_derive_attributes(&serializable_types, read_syntax(BINDINGS_FILE));
 }
 
 trait CommandEx {
@@ -164,45 +140,4 @@ fn save_bindings(path: &str) {
 
     // Write the bindings to the $OUT_DIR/bindings.rs file.
     bindings.write_to_file(path).unwrap();
-}
-
-fn add_serde_derive_tokens<'a>(
-    type_identifiers: &'a HashSet<proc_macro2::Ident>,
-    syntax: &'a syn::File,
-) -> impl Iterator<Item = proc_macro2::TokenTree> + 'a {
-    syntax
-        .into_token_stream()
-        .into_iter()
-        .collect::<Vec<_>>()
-        .into_iter()
-        .circular_tuple_windows()
-        .flat_map(move |token_tuple| expand_tokens_if_matches(type_identifiers, token_tuple))
-}
-
-type TokenTuple = (
-    proc_macro2::TokenTree,
-    proc_macro2::TokenTree,
-    proc_macro2::TokenTree,
-);
-
-fn expand_tokens_if_matches(
-    type_identifiers: &HashSet<proc_macro2::Ident>,
-    tokens: TokenTuple,
-) -> Vec<proc_macro2::TokenTree> {
-    match tokens {
-        (token, _, proc_macro2::TokenTree::Ident(ident)) => {
-            if type_identifiers.contains(&ident) {
-                let tokens = quote::quote! {
-                #[derive(serde::Serialize, serde::Deserialize)]
-                };
-
-                let mut expanded: Vec<_> = tokens.into_iter().collect();
-                expanded.push(token);
-                expanded
-            } else {
-                vec![token]
-            }
-        }
-        (token, _, _) => vec![token],
-    }
 }

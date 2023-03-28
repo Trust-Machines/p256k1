@@ -1,4 +1,4 @@
-pub use crate::_bindings::{
+pub use crate::bindings::{
     s41b6073611725d2e12ac7a72d3da3d46fd43f932_secp256k1_const_beta as secp256k1_const_beta,
     s41b6073611725d2e12ac7a72d3da3d46fd43f932_secp256k1_const_lambda as secp256k1_const_lambda,
     s41b6073611725d2e12ac7a72d3da3d46fd43f932_secp256k1_const_modinfo_fe as secp256k1_const_modinfo_fe,
