@@ -1,2 +1,2 @@
 [workspace]
-members = ["p256k1"]
+members = ["p256k1", "update"]

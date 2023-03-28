@@ -11,7 +11,7 @@ fn main() {
 
     let url = format!("https://github.com/{USER}/{REPO_NAME}/archive/{COMMIT_SHA}.zip");
 
-    let output_dir = format!("../{REPO_NAME}");
+    let output_dir = format!("./{REPO_NAME}");
     if Path::new(&output_dir).exists() {
         fs::remove_dir_all(&output_dir).unwrap();
     }
@@ -37,7 +37,7 @@ fn main() {
     }
 
     //
-    const PREFIX_FILE: &str = "../_p256k1.h";
+    const PREFIX_FILE: &str = "./_p256k1.h";
     let list = {
         const TMP_BINDINGS: &str = "./tmp_bindings.rs";
 
@@ -82,7 +82,7 @@ fn main() {
             &["#endif", ""],
         );
         write_file(
-            "../src/_rename.rs",
+            "./p256k1/src/_rename.rs",
             &["pub use crate::_bindings::{"],
             list.iter().map(|v| format!("    {} as {v},", prefix(v))),
             &["};", ""],
@@ -106,7 +106,7 @@ fn main() {
         }
     }
 
-    const BINDINGS_FILE: &str = "../src/_bindings.rs";
+    const BINDINGS_FILE: &str = "./p256k1/src/_bindings.rs";
     save_bindings(BINDINGS_FILE);
 
     let serializable_types = ["secp256k1_scalar", "secp256k1_fe", "secp256k1_gej"];
@@ -154,7 +154,7 @@ fn save_bindings(path: &str) {
     let bindings = bindgen::Builder::default()
         // The input header we would like to generate
         // bindings for.
-        .header("../wrapper.h")
+        .header("./wrapper.h")
         // Tell cargo to invalidate the built crate whenever any of the
         // included header files changed.
         // .parse_callbacks(Box::new(bindgen::CargoCallbacks))
