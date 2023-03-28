@@ -10,7 +10,7 @@ fn main() {
 
     let url = format!("https://github.com/{USER}/{REPO_NAME}/archive/{COMMIT_SHA}.zip");
 
-    let output_dir = format!("./_{REPO_NAME}");
+    let output_dir = format!("./p256k1/_{REPO_NAME}");
     if Path::new(&output_dir).exists() {
         fs::remove_dir_all(&output_dir).unwrap();
     }
@@ -36,7 +36,7 @@ fn main() {
     }
 
     //
-    const PREFIX_FILE: &str = "./_p256k1.h";
+    const PREFIX_FILE: &str = "./p256k1/_p256k1.h";
     let list = {
         const TMP_BINDINGS: &str = "./tmp_bindings.rs";
 
@@ -130,7 +130,7 @@ fn save_bindings(path: &str) {
     let bindings = bindgen::Builder::default()
         // The input header we would like to generate
         // bindings for.
-        .header("./wrapper.h")
+        .header("./p256k1/wrapper.h")
         // Tell cargo to invalidate the built crate whenever any of the
         // included header files changed.
         // .parse_callbacks(Box::new(bindgen::CargoCallbacks))

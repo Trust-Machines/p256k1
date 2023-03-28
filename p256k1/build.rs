@@ -7,7 +7,7 @@ fn main() {
     println!("cargo:rustc-env=ECMULT_GEN_PREC_BITS=4");
     println!("cargo:rustc-env=ECMULT_WINDOW_SIZE=15");
 
-    const PATH: &str = "../_secp256k1/";
+    const PATH: &str = "./_secp256k1/";
     let path = |v: &str| format!("{PATH}{}", v);
 
     let mut base_config = cc::Build::new();
@@ -72,7 +72,7 @@ fn save_bindings(path: &str) {
     let bindings = bindgen::Builder::default()
         // The input header we would like to generate
         // bindings for.
-        .header("../wrapper.h")
+        .header("./wrapper.h")
         // Tell cargo to invalidate the built crate whenever any of the
         // included header files changed.
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
