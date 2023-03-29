@@ -13,16 +13,19 @@ use num_traits::Zero;
 use primitive_types::U256;
 use std::os::raw::c_void;
 
-use crate::bindings::{
-    secp256k1_callback, secp256k1_ecmult_multi_callback, secp256k1_fe, secp256k1_ge, secp256k1_gej,
-    secp256k1_scalar, SECP256K1_TAG_PUBKEY_EVEN, SECP256K1_TAG_PUBKEY_ODD,
+use crate::{
+    bindings::{
+        secp256k1_callback, secp256k1_ecmult_multi_callback, secp256k1_fe, secp256k1_ge,
+        secp256k1_gej, secp256k1_scalar, SECP256K1_TAG_PUBKEY_EVEN, SECP256K1_TAG_PUBKEY_ODD,
+    },
+    group::secp256k1_ge_set_gej,
 };
 
 use crate::_rename::{
     secp256k1_ecmult, secp256k1_ecmult_multi_var, secp256k1_fe_get_b32, secp256k1_fe_is_odd,
-    secp256k1_fe_normalize_var, secp256k1_fe_set_b32, secp256k1_ge_set_gej,
-    secp256k1_ge_set_xo_var, secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_gej_set_ge,
-    secp256k1_scratch_space_create, secp256k1_scratch_space_destroy,
+    secp256k1_fe_normalize_var, secp256k1_fe_set_b32, secp256k1_ge_set_xo_var,
+    secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_gej_set_ge, secp256k1_scratch_space_create,
+    secp256k1_scratch_space_destroy,
 };
 
 use crate::{context::Context, field, scalar::Scalar};
@@ -119,17 +122,8 @@ extern "C" fn ecmult_multi_callback(
     unsafe {
         let sp: *mut ScalarsPoints = data as *mut ScalarsPoints;
 
-        let mut ge = secp256k1_ge {
-            x: secp256k1_fe { n: [0; 5] },
-            y: secp256k1_fe { n: [0; 5] },
-            infinity: 0,
-        };
-
-        let gej = &(*sp).p[idx].gej as *const secp256k1_gej;
-        secp256k1_ge_set_gej(&mut ge, gej);
-
+        secp256k1_ge_set_gej(&mut *pt, &(*sp).p[idx].gej);
         *sc = (*sp).s[idx].scalar;
-        *pt = ge;
     }
 
     1

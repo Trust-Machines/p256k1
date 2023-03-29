@@ -1132,7 +1132,7 @@ void secp256k1_fe_mul(secp256k1_fe *r, const secp256k1_fe *a, const secp256k1_fe
 #endif
 }
 
-static void secp256k1_fe_sqr(secp256k1_fe *r, const secp256k1_fe *a) {
+void secp256k1_fe_sqr(secp256k1_fe *r, const secp256k1_fe *a) {
 #ifdef VERIFY
     VERIFY_CHECK(a->magnitude <= 8);
     secp256k1_fe_verify(a);
