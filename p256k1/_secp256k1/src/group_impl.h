@@ -101,17 +101,17 @@ static void secp256k1_ge_neg(secp256k1_ge *r, const secp256k1_ge *a) {
     secp256k1_fe_negate(&r->y, &r->y, 1);
 }
 
-void secp256k1_ge_set_gej(secp256k1_ge *r, secp256k1_gej *a) {
-    secp256k1_fe z2, z3;
+void secp256k1_ge_set_gej(secp256k1_ge *r, const secp256k1_gej *a) {
+    secp256k1_fe z2, z3, az, ax, ay;
     r->infinity = a->infinity;
-    secp256k1_fe_inv(&a->z, &a->z);
-    secp256k1_fe_sqr(&z2, &a->z);
-    secp256k1_fe_mul(&z3, &a->z, &z2);
-    secp256k1_fe_mul(&a->x, &a->x, &z2);
-    secp256k1_fe_mul(&a->y, &a->y, &z3);
-    secp256k1_fe_set_int(&a->z, 1);
-    r->x = a->x;
-    r->y = a->y;
+    secp256k1_fe_inv(&az, &a->z);
+    secp256k1_fe_sqr(&z2, &az);
+    secp256k1_fe_mul(&z3, &az, &z2);
+    secp256k1_fe_mul(&ax, &a->x, &z2);
+    secp256k1_fe_mul(&ay, &a->y, &z3);
+    secp256k1_fe_set_int(&az, 1);
+    r->x = ax;
+    r->y = ay;
 }
 
 static void secp256k1_ge_set_gej_var(secp256k1_ge *r, secp256k1_gej *a) {
