@@ -11,8 +11,8 @@ fn main() {
     let url = &format!("https://github.com/{USER}/{REPO_NAME}/archive/{COMMIT_SHA}.zip");
 
     let output_dir = &format!("./p256k1/_{REPO_NAME}");
-    if Path::new(&output_dir).exists() {
-        fs::remove_dir_all(&output_dir).unwrap();
+    if Path::new(output_dir).exists() {
+        fs::remove_dir_all(output_dir).unwrap();
     }
 
     // unpack
@@ -22,7 +22,7 @@ fn main() {
             .arg("-L")
             .arg("-o")
             .arg(ZIP)
-            .arg(&url)
+            .arg(url)
             .status_unwrap();
 
         const TMP_DIR: &str = "tmp";
@@ -32,7 +32,7 @@ fn main() {
             .arg(ZIP)
             .status_unwrap();
         fs::remove_file(ZIP).unwrap();
-        fs::rename(format!("{TMP_DIR}/{REPO_NAME}-{COMMIT_SHA}"), &output_dir).unwrap();
+        fs::rename(format!("{TMP_DIR}/{REPO_NAME}-{COMMIT_SHA}"), output_dir).unwrap();
         fs::remove_dir_all(TMP_DIR).unwrap();
     }
 
