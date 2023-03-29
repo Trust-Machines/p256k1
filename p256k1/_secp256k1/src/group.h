@@ -61,7 +61,7 @@ static int secp256k1_ge_is_valid_var(const secp256k1_ge *a);
 static void secp256k1_ge_neg(secp256k1_ge *r, const secp256k1_ge *a);
 
 /** Set a group element equal to another which is given in jacobian coordinates. Constant time. */
-void secp256k1_ge_set_gej(secp256k1_ge *r, secp256k1_gej *a);
+static void secp256k1_ge_set_gej(secp256k1_ge *r, secp256k1_gej *a);
 
 /** Set a group element equal to another which is given in jacobian coordinates. */
 static void secp256k1_ge_set_gej_var(secp256k1_ge *r, secp256k1_gej *a);

@@ -50,7 +50,6 @@ pub use crate::bindings::{
     s2bca0a5cbf756dd4ff1f0bda4585a7d3c64e1480_secp256k1_fe_set_b32 as secp256k1_fe_set_b32,
     s2bca0a5cbf756dd4ff1f0bda4585a7d3c64e1480_secp256k1_fe_set_int as secp256k1_fe_set_int,
     s2bca0a5cbf756dd4ff1f0bda4585a7d3c64e1480_secp256k1_ge_const_g as secp256k1_ge_const_g,
-    s2bca0a5cbf756dd4ff1f0bda4585a7d3c64e1480_secp256k1_ge_set_gej as secp256k1_ge_set_gej,
     s2bca0a5cbf756dd4ff1f0bda4585a7d3c64e1480_secp256k1_ge_set_gej_const as secp256k1_ge_set_gej_const,
     s2bca0a5cbf756dd4ff1f0bda4585a7d3c64e1480_secp256k1_ge_set_xo_var as secp256k1_ge_set_xo_var,
     s2bca0a5cbf756dd4ff1f0bda4585a7d3c64e1480_secp256k1_gej_add_var as secp256k1_gej_add_var,
