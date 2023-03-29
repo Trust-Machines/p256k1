@@ -38,26 +38,75 @@ fn main() {
 
     // apply patches
     {
-        let file_name = &format!("{output_dir}/include/secp256k1.h");
-        patch(file_name, |s| {
-            s.replace(
-                "#define SECP256K1_H\n",
-                "#define SECP256K1_H\n\n#include \"../../_p256k1.h\"\n",
-            )
-        });
+        {
+            const BEGIN: &str = "#define SECP256K1_H\n";
+            patch(
+                &format!("{output_dir}/include/secp256k1.h"),
+                BEGIN,
+                &format!("{BEGIN}\n#include \"../../_p256k1.h\"\n"),
+            );
+        }
         patch_dir(output_dir);
 
-        fn patch(file_name: &str, f: impl Fn(String) -> String) {
-            fs::write(file_name, f(fs::read_to_string(file_name).unwrap())).unwrap();
+        fn patch(file_name: &str, from: &str, to: &str) {
+            fs::write(
+                file_name,
+                fs::read_to_string(file_name).unwrap().replace(from, to),
+            )
+            .unwrap();
         }
 
         fn patch_dir(dir: &str) {
             for r in fs::read_dir(dir).unwrap() {
                 let d = r.unwrap();
                 if d.file_type().unwrap().is_file() {
-                    patch(d.path().to_str().unwrap(), |s| s);
+                    patch_static(
+                        d.path().to_str().unwrap(),
+                        &[
+                            "secp256k1_fe_add",
+                            "secp256k1_fe_cmp_var",
+                            "secp256k1_fe_get_b32",
+                            "secp256k1_fe_inv",
+                            "secp256k1_fe_is_odd",
+                            "secp256k1_fe_mul",
+                            "secp256k1_fe_negate",
+                            "secp256k1_fe_normalize",
+                            "secp256k1_fe_normalize_var",
+                            "secp256k1_ecmult",
+                            "secp256k1_scalar_add",
+                            "secp256k1_fe_set_b32",
+                            "secp256k1_fe_set_int",
+                            "secp256k1_scalar_eq",
+                            "secp256k1_scalar_get_b32",
+                            "secp256k1_scalar_inverse",
+                            "secp256k1_scalar_mul",
+                            "secp256k1_scalar_negate",
+                            "secp256k1_scalar_set_b32",
+                            "secp256k1_scalar_set_int",
+                            "secp256k1_ecmult_multi_var",
+                            "secp256k1_ge_set_gej",
+                            "secp256k1_ge_set_xo_var",
+                            "secp256k1_gej_add_var",
+                            "secp256k1_gej_neg",
+                            "secp256k1_gej_set_ge",
+                        ],
+                    );
                 } else {
                     patch_dir(d.path().to_str().unwrap());
+                }
+            }
+        }
+
+        fn patch_static(file_name: &str, list: &[&str]) {
+            for &name in list {
+                for t in ["int", "void"] {
+                    let s = format!("{t} {name}(");
+                    patch(file_name, &format!("\nstatic {s}"), &format!("\n{s}"));
+                    patch(
+                        file_name,
+                        &format!("\nSECP256K1_INLINE static {s}"),
+                        &format!("\n{s}"),
+                    );
                 }
             }
         }

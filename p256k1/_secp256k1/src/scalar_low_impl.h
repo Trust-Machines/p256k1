@@ -17,7 +17,7 @@ SECP256K1_INLINE static int secp256k1_scalar_is_even(const secp256k1_scalar *a) 
 }
 
 SECP256K1_INLINE static void secp256k1_scalar_clear(secp256k1_scalar *r) { *r = 0; }
-SECP256K1_INLINE static void secp256k1_scalar_set_int(secp256k1_scalar *r, unsigned int v) { *r = v; }
+void secp256k1_scalar_set_int(secp256k1_scalar *r, unsigned int v) { *r = v; }
 
 SECP256K1_INLINE static unsigned int secp256k1_scalar_get_bits(const secp256k1_scalar *a, unsigned int offset, unsigned int count) {
     if (offset < 32)
@@ -32,7 +32,7 @@ SECP256K1_INLINE static unsigned int secp256k1_scalar_get_bits_var(const secp256
 
 SECP256K1_INLINE static int secp256k1_scalar_check_overflow(const secp256k1_scalar *a) { return *a >= EXHAUSTIVE_TEST_ORDER; }
 
-static int secp256k1_scalar_add(secp256k1_scalar *r, const secp256k1_scalar *a, const secp256k1_scalar *b) {
+int secp256k1_scalar_add(secp256k1_scalar *r, const secp256k1_scalar *a, const secp256k1_scalar *b) {
     *r = (*a + *b) % EXHAUSTIVE_TEST_ORDER;
     return *r < *b;
 }
@@ -48,7 +48,7 @@ static void secp256k1_scalar_cadd_bit(secp256k1_scalar *r, unsigned int bit, int
 #endif
 }
 
-static void secp256k1_scalar_set_b32(secp256k1_scalar *r, const unsigned char *b32, int *overflow) {
+void secp256k1_scalar_set_b32(secp256k1_scalar *r, const unsigned char *b32, int *overflow) {
     int i;
     int over = 0;
     *r = 0;
@@ -62,7 +62,7 @@ static void secp256k1_scalar_set_b32(secp256k1_scalar *r, const unsigned char *b
     if (overflow) *overflow = over;
 }
 
-static void secp256k1_scalar_get_b32(unsigned char *bin, const secp256k1_scalar* a) {
+void secp256k1_scalar_get_b32(unsigned char *bin, const secp256k1_scalar* a) {
     memset(bin, 0, 32);
     bin[28] = *a >> 24; bin[29] = *a >> 16; bin[30] = *a >> 8; bin[31] = *a;
 }
@@ -71,7 +71,7 @@ SECP256K1_INLINE static int secp256k1_scalar_is_zero(const secp256k1_scalar *a) 
     return *a == 0;
 }
 
-static void secp256k1_scalar_negate(secp256k1_scalar *r, const secp256k1_scalar *a) {
+void secp256k1_scalar_negate(secp256k1_scalar *r, const secp256k1_scalar *a) {
     if (*a == 0) {
         *r = 0;
     } else {
@@ -92,7 +92,7 @@ static int secp256k1_scalar_cond_negate(secp256k1_scalar *r, int flag) {
     return flag ? -1 : 1;
 }
 
-static void secp256k1_scalar_mul(secp256k1_scalar *r, const secp256k1_scalar *a, const secp256k1_scalar *b) {
+void secp256k1_scalar_mul(secp256k1_scalar *r, const secp256k1_scalar *a, const secp256k1_scalar *b) {
     *r = (*a * *b) % EXHAUSTIVE_TEST_ORDER;
 }
 
@@ -110,7 +110,7 @@ static void secp256k1_scalar_split_128(secp256k1_scalar *r1, secp256k1_scalar *r
     *r2 = 0;
 }
 
-SECP256K1_INLINE static int secp256k1_scalar_eq(const secp256k1_scalar *a, const secp256k1_scalar *b) {
+int secp256k1_scalar_eq(const secp256k1_scalar *a, const secp256k1_scalar *b) {
     return *a == *b;
 }
 
@@ -122,7 +122,7 @@ static SECP256K1_INLINE void secp256k1_scalar_cmov(secp256k1_scalar *r, const se
     *r = (*r & mask0) | (*a & mask1);
 }
 
-static void secp256k1_scalar_inverse(secp256k1_scalar *r, const secp256k1_scalar *x) {
+void secp256k1_scalar_inverse(secp256k1_scalar *r, const secp256k1_scalar *x) {
     int i;
     *r = 0;
     for (i = 0; i < EXHAUSTIVE_TEST_ORDER; i++)

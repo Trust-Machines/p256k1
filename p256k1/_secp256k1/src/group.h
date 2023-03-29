@@ -49,7 +49,7 @@ static void secp256k1_ge_set_xy(secp256k1_ge *r, const secp256k1_fe *x, const se
 
 /** Set a group element (affine) equal to the point with the given X coordinate, and given oddness
  *  for Y. Return value indicates whether the result is valid. */
-static int secp256k1_ge_set_xo_var(secp256k1_ge *r, const secp256k1_fe *x, int odd);
+int secp256k1_ge_set_xo_var(secp256k1_ge *r, const secp256k1_fe *x, int odd);
 
 /** Check whether a group element is the point at infinity. */
 static int secp256k1_ge_is_infinity(const secp256k1_ge *a);
@@ -61,7 +61,7 @@ static int secp256k1_ge_is_valid_var(const secp256k1_ge *a);
 static void secp256k1_ge_neg(secp256k1_ge *r, const secp256k1_ge *a);
 
 /** Set a group element equal to another which is given in jacobian coordinates. Constant time. */
-static void secp256k1_ge_set_gej(secp256k1_ge *r, secp256k1_gej *a);
+void secp256k1_ge_set_gej(secp256k1_ge *r, secp256k1_gej *a);
 
 /** Set a group element equal to another which is given in jacobian coordinates. */
 static void secp256k1_ge_set_gej_var(secp256k1_ge *r, secp256k1_gej *a);
@@ -95,7 +95,7 @@ static void secp256k1_ge_set_infinity(secp256k1_ge *r);
 static void secp256k1_gej_set_infinity(secp256k1_gej *r);
 
 /** Set a group element (jacobian) equal to another which is given in affine coordinates. */
-static void secp256k1_gej_set_ge(secp256k1_gej *r, const secp256k1_ge *a);
+void secp256k1_gej_set_ge(secp256k1_gej *r, const secp256k1_ge *a);
 
 /** Check two group elements (jacobian) for equality in variable time. */
 static int secp256k1_gej_eq_var(const secp256k1_gej *a, const secp256k1_gej *b);
@@ -104,7 +104,7 @@ static int secp256k1_gej_eq_var(const secp256k1_gej *a, const secp256k1_gej *b);
 static int secp256k1_gej_eq_x_var(const secp256k1_fe *x, const secp256k1_gej *a);
 
 /** Set r equal to the inverse of a (i.e., mirrored around the X axis) */
-static void secp256k1_gej_neg(secp256k1_gej *r, const secp256k1_gej *a);
+void secp256k1_gej_neg(secp256k1_gej *r, const secp256k1_gej *a);
 
 /** Check whether a group element is the point at infinity. */
 static int secp256k1_gej_is_infinity(const secp256k1_gej *a);
@@ -116,7 +116,7 @@ static void secp256k1_gej_double(secp256k1_gej *r, const secp256k1_gej *a);
 static void secp256k1_gej_double_var(secp256k1_gej *r, const secp256k1_gej *a, secp256k1_fe *rzr);
 
 /** Set r equal to the sum of a and b. If rzr is non-NULL this sets *rzr such that r->z == a->z * *rzr (a cannot be infinity in that case). */
-static void secp256k1_gej_add_var(secp256k1_gej *r, const secp256k1_gej *a, const secp256k1_gej *b, secp256k1_fe *rzr);
+void secp256k1_gej_add_var(secp256k1_gej *r, const secp256k1_gej *a, const secp256k1_gej *b, secp256k1_fe *rzr);
 
 /** Set r equal to the sum of a and b (with b given in affine coordinates, and not infinity). */
 static void secp256k1_gej_add_ge(secp256k1_gej *r, const secp256k1_gej *a, const secp256k1_ge *b);

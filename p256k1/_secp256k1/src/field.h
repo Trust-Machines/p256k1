@@ -37,13 +37,13 @@ static const secp256k1_fe secp256k1_const_beta = SECP256K1_FE_CONST(
 /** Normalize a field element. This brings the field element to a canonical representation, reduces
  *  its magnitude to 1, and reduces it modulo field size `p`.
  */
-static void secp256k1_fe_normalize(secp256k1_fe *r);
+void secp256k1_fe_normalize(secp256k1_fe *r);
 
 /** Weakly normalize a field element: reduce its magnitude to 1, but don't fully normalize. */
 static void secp256k1_fe_normalize_weak(secp256k1_fe *r);
 
 /** Normalize a field element, without constant-time guarantee. */
-static void secp256k1_fe_normalize_var(secp256k1_fe *r);
+void secp256k1_fe_normalize_var(secp256k1_fe *r);
 
 /** Verify whether a field element represents zero i.e. would normalize to a zero value. */
 static int secp256k1_fe_normalizes_to_zero(const secp256k1_fe *r);
@@ -55,7 +55,7 @@ static int secp256k1_fe_normalizes_to_zero_var(const secp256k1_fe *r);
 /** Set a field element equal to a small (not greater than 0x7FFF), non-negative integer.
  *  Resulting field element is normalized; it has magnitude 0 if a == 0, and magnitude 1 otherwise.
  */
-static void secp256k1_fe_set_int(secp256k1_fe *r, int a);
+void secp256k1_fe_set_int(secp256k1_fe *r, int a);
 
 /** Sets a field element equal to zero, initializing all fields. */
 static void secp256k1_fe_clear(secp256k1_fe *a);
@@ -64,7 +64,7 @@ static void secp256k1_fe_clear(secp256k1_fe *a);
 static int secp256k1_fe_is_zero(const secp256k1_fe *a);
 
 /** Check the "oddness" of a field element. Requires the input to be normalized. */
-static int secp256k1_fe_is_odd(const secp256k1_fe *a);
+int secp256k1_fe_is_odd(const secp256k1_fe *a);
 
 /** Compare two field elements. Requires magnitude-1 inputs. */
 static int secp256k1_fe_equal(const secp256k1_fe *a, const secp256k1_fe *b);
@@ -73,17 +73,17 @@ static int secp256k1_fe_equal(const secp256k1_fe *a, const secp256k1_fe *b);
 static int secp256k1_fe_equal_var(const secp256k1_fe *a, const secp256k1_fe *b);
 
 /** Compare two field elements. Requires both inputs to be normalized */
-static int secp256k1_fe_cmp_var(const secp256k1_fe *a, const secp256k1_fe *b);
+int secp256k1_fe_cmp_var(const secp256k1_fe *a, const secp256k1_fe *b);
 
 /** Set a field element equal to 32-byte big endian value. If successful, the resulting field element is normalized. */
-static int secp256k1_fe_set_b32(secp256k1_fe *r, const unsigned char *a);
+int secp256k1_fe_set_b32(secp256k1_fe *r, const unsigned char *a);
 
 /** Convert a field element to a 32-byte big endian value. Requires the input to be normalized */
-static void secp256k1_fe_get_b32(unsigned char *r, const secp256k1_fe *a);
+void secp256k1_fe_get_b32(unsigned char *r, const secp256k1_fe *a);
 
 /** Set a field element equal to the additive inverse of another. Takes a maximum magnitude of the input
  *  as an argument. The magnitude of the output is one higher. */
-static void secp256k1_fe_negate(secp256k1_fe *r, const secp256k1_fe *a, int m);
+void secp256k1_fe_negate(secp256k1_fe *r, const secp256k1_fe *a, int m);
 
 /** Adds a small integer (up to 0x7FFF) to r. The resulting magnitude increases by one. */
 static void secp256k1_fe_add_int(secp256k1_fe *r, int a);
@@ -93,11 +93,11 @@ static void secp256k1_fe_add_int(secp256k1_fe *r, int a);
 static void secp256k1_fe_mul_int(secp256k1_fe *r, int a);
 
 /** Adds a field element to another. The result has the sum of the inputs' magnitudes as magnitude. */
-static void secp256k1_fe_add(secp256k1_fe *r, const secp256k1_fe *a);
+void secp256k1_fe_add(secp256k1_fe *r, const secp256k1_fe *a);
 
 /** Sets a field element to be the product of two others. Requires the inputs' magnitudes to be at most 8.
  *  The output magnitude is 1 (but not guaranteed to be normalized). */
-static void secp256k1_fe_mul(secp256k1_fe *r, const secp256k1_fe *a, const secp256k1_fe * SECP256K1_RESTRICT b);
+void secp256k1_fe_mul(secp256k1_fe *r, const secp256k1_fe *a, const secp256k1_fe * SECP256K1_RESTRICT b);
 
 /** Sets a field element to be the square of another. Requires the input's magnitude to be at most 8.
  *  The output magnitude is 1 (but not guaranteed to be normalized). */
@@ -112,7 +112,7 @@ static int secp256k1_fe_sqrt(secp256k1_fe *r, const secp256k1_fe *a);
 
 /** Sets a field element to be the (modular) inverse of another. Requires the input's magnitude to be
  *  at most 8. The output magnitude is 1 (but not guaranteed to be normalized). */
-static void secp256k1_fe_inv(secp256k1_fe *r, const secp256k1_fe *a);
+void secp256k1_fe_inv(secp256k1_fe *r, const secp256k1_fe *a);
 
 /** Potentially faster version of secp256k1_fe_inv, without constant-time guarantee. */
 static void secp256k1_fe_inv_var(secp256k1_fe *r, const secp256k1_fe *a);

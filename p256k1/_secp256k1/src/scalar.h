@@ -33,39 +33,39 @@ static unsigned int secp256k1_scalar_get_bits_var(const secp256k1_scalar *a, uns
  * Out:     r:          scalar to be set.
  *          overflow:   non-zero if the scalar was bigger or equal to `n` before reduction, zero otherwise (can be NULL).
  */
-static void secp256k1_scalar_set_b32(secp256k1_scalar *r, const unsigned char *bin, int *overflow);
+void secp256k1_scalar_set_b32(secp256k1_scalar *r, const unsigned char *bin, int *overflow);
 
 /** Set a scalar from a big endian byte array and returns 1 if it is a valid
  *  seckey and 0 otherwise. */
 static int secp256k1_scalar_set_b32_seckey(secp256k1_scalar *r, const unsigned char *bin);
 
 /** Set a scalar to an unsigned integer. */
-static void secp256k1_scalar_set_int(secp256k1_scalar *r, unsigned int v);
+void secp256k1_scalar_set_int(secp256k1_scalar *r, unsigned int v);
 
 /** Convert a scalar to a byte array. */
-static void secp256k1_scalar_get_b32(unsigned char *bin, const secp256k1_scalar* a);
+void secp256k1_scalar_get_b32(unsigned char *bin, const secp256k1_scalar* a);
 
 /** Add two scalars together (modulo the group order). Returns whether it overflowed. */
-static int secp256k1_scalar_add(secp256k1_scalar *r, const secp256k1_scalar *a, const secp256k1_scalar *b);
+int secp256k1_scalar_add(secp256k1_scalar *r, const secp256k1_scalar *a, const secp256k1_scalar *b);
 
 /** Conditionally add a power of two to a scalar. The result is not allowed to overflow. */
 static void secp256k1_scalar_cadd_bit(secp256k1_scalar *r, unsigned int bit, int flag);
 
 /** Multiply two scalars (modulo the group order). */
-static void secp256k1_scalar_mul(secp256k1_scalar *r, const secp256k1_scalar *a, const secp256k1_scalar *b);
+void secp256k1_scalar_mul(secp256k1_scalar *r, const secp256k1_scalar *a, const secp256k1_scalar *b);
 
 /** Shift a scalar right by some amount strictly between 0 and 16, returning
  *  the low bits that were shifted off */
 static int secp256k1_scalar_shr_int(secp256k1_scalar *r, int n);
 
 /** Compute the inverse of a scalar (modulo the group order). */
-static void secp256k1_scalar_inverse(secp256k1_scalar *r, const secp256k1_scalar *a);
+void secp256k1_scalar_inverse(secp256k1_scalar *r, const secp256k1_scalar *a);
 
 /** Compute the inverse of a scalar (modulo the group order), without constant-time guarantee. */
 static void secp256k1_scalar_inverse_var(secp256k1_scalar *r, const secp256k1_scalar *a);
 
 /** Compute the complement of a scalar (modulo the group order). */
-static void secp256k1_scalar_negate(secp256k1_scalar *r, const secp256k1_scalar *a);
+void secp256k1_scalar_negate(secp256k1_scalar *r, const secp256k1_scalar *a);
 
 /** Check whether a scalar equals zero. */
 static int secp256k1_scalar_is_zero(const secp256k1_scalar *a);
@@ -84,7 +84,7 @@ static int secp256k1_scalar_is_high(const secp256k1_scalar *a);
 static int secp256k1_scalar_cond_negate(secp256k1_scalar *a, int flag);
 
 /** Compare two scalars. */
-static int secp256k1_scalar_eq(const secp256k1_scalar *a, const secp256k1_scalar *b);
+int secp256k1_scalar_eq(const secp256k1_scalar *a, const secp256k1_scalar *b);
 
 /** Find r1 and r2 such that r1+r2*2^128 = k. */
 static void secp256k1_scalar_split_128(secp256k1_scalar *r1, secp256k1_scalar *r2, const secp256k1_scalar *k);
