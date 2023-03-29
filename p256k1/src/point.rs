@@ -121,7 +121,7 @@ extern "C" fn ecmult_multi_callback(
 ) -> ::std::os::raw::c_int {
     unsafe {
         let sp: *mut ScalarsPoints = data as *mut ScalarsPoints;
-        
+
         secp256k1_ge_set_gej(&mut *pt, &(*sp).p[idx].gej);
         *sc = (*sp).s[idx].scalar;
     }
