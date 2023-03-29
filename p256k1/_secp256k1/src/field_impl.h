@@ -7,10 +7,6 @@
 #ifndef SECP256K1_FIELD_IMPL_H
 #define SECP256K1_FIELD_IMPL_H
 
-#if defined HAVE_CONFIG_H
-#include "libsecp256k1-config.h"
-#endif
-
 #include "util.h"
 
 #if defined(SECP256K1_WIDEMUL_INT128)
@@ -21,21 +17,21 @@
 #error "Please select wide multiplication implementation"
 #endif
 
-SECP256K1_INLINE int secp256k1_fe_equal(const secp256k1_fe *a, const secp256k1_fe *b) {
+SECP256K1_INLINE static int secp256k1_fe_equal(const secp256k1_fe *a, const secp256k1_fe *b) {
     secp256k1_fe na;
     secp256k1_fe_negate(&na, a, 1);
     secp256k1_fe_add(&na, b);
     return secp256k1_fe_normalizes_to_zero(&na);
 }
 
-SECP256K1_INLINE int secp256k1_fe_equal_var(const secp256k1_fe *a, const secp256k1_fe *b) {
+SECP256K1_INLINE static int secp256k1_fe_equal_var(const secp256k1_fe *a, const secp256k1_fe *b) {
     secp256k1_fe na;
     secp256k1_fe_negate(&na, a, 1);
     secp256k1_fe_add(&na, b);
     return secp256k1_fe_normalizes_to_zero_var(&na);
 }
 
-int secp256k1_fe_sqrt(secp256k1_fe *r, const secp256k1_fe *a) {
+static int secp256k1_fe_sqrt(secp256k1_fe *r, const secp256k1_fe *a) {
     /** Given that p is congruent to 3 mod 4, we can compute the square root of
      *  a mod p as the (p+1)/4'th power of a.
      *

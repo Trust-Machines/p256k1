@@ -45,30 +45,29 @@ typedef struct {
 #define SECP256K1_GE_STORAGE_CONST_GET(t) SECP256K1_FE_STORAGE_CONST_GET(t.x), SECP256K1_FE_STORAGE_CONST_GET(t.y)
 
 /** Set a group element equal to the point with given X and Y coordinates */
-void secp256k1_ge_set_xy(secp256k1_ge *r, const secp256k1_fe *x, const secp256k1_fe *y);
+static void secp256k1_ge_set_xy(secp256k1_ge *r, const secp256k1_fe *x, const secp256k1_fe *y);
 
 /** Set a group element (affine) equal to the point with the given X coordinate, and given oddness
  *  for Y. Return value indicates whether the result is valid. */
 int secp256k1_ge_set_xo_var(secp256k1_ge *r, const secp256k1_fe *x, int odd);
 
 /** Check whether a group element is the point at infinity. */
-int secp256k1_ge_is_infinity(const secp256k1_ge *a);
+static int secp256k1_ge_is_infinity(const secp256k1_ge *a);
 
 /** Check whether a group element is valid (i.e., on the curve). */
-int secp256k1_ge_is_valid_var(const secp256k1_ge *a);
+static int secp256k1_ge_is_valid_var(const secp256k1_ge *a);
 
 /** Set r equal to the inverse of a (i.e., mirrored around the X axis) */
-void secp256k1_ge_neg(secp256k1_ge *r, const secp256k1_ge *a);
+static void secp256k1_ge_neg(secp256k1_ge *r, const secp256k1_ge *a);
 
 /** Set a group element equal to another which is given in jacobian coordinates. Constant time. */
 void secp256k1_ge_set_gej(secp256k1_ge *r, const secp256k1_gej *a);
 
 /** Set a group element equal to another which is given in jacobian coordinates. */
-void secp256k1_ge_set_gej_var(secp256k1_ge *r, secp256k1_gej *a);
+static void secp256k1_ge_set_gej_var(secp256k1_ge *r, secp256k1_gej *a);
 
 /** Set a batch of group elements equal to the inputs given in jacobian coordinates */
-void secp256k1_ge_set_all_gej_var(secp256k1_ge *r, const secp256k1_gej *a, size_t len);
-
+static void secp256k1_ge_set_all_gej_var(secp256k1_ge *r, const secp256k1_gej *a, size_t len);
 
 /** Bring a batch of inputs to the same global z "denominator", based on ratios between
  *  (omitted) z coordinates of adjacent elements.
@@ -87,13 +86,13 @@ void secp256k1_ge_set_all_gej_var(secp256k1_ge *r, const secp256k1_gej *a, size_
  *
  *  The coordinates of the final element a[len-1] are not changed.
  */
-void secp256k1_ge_table_set_globalz(size_t len, secp256k1_ge *a, const secp256k1_fe *zr);
+static void secp256k1_ge_table_set_globalz(size_t len, secp256k1_ge *a, const secp256k1_fe *zr);
 
 /** Set a group element (affine) equal to the point at infinity. */
-void secp256k1_ge_set_infinity(secp256k1_ge *r);
+static void secp256k1_ge_set_infinity(secp256k1_ge *r);
 
 /** Set a group element (jacobian) equal to the point at infinity. */
-void secp256k1_gej_set_infinity(secp256k1_gej *r);
+static void secp256k1_gej_set_infinity(secp256k1_gej *r);
 
 /** Set a group element (jacobian) equal to another which is given in affine coordinates. */
 void secp256k1_gej_set_ge(secp256k1_gej *r, const secp256k1_ge *a);
@@ -102,58 +101,57 @@ void secp256k1_gej_set_ge(secp256k1_gej *r, const secp256k1_ge *a);
 static int secp256k1_gej_eq_var(const secp256k1_gej *a, const secp256k1_gej *b);
 
 /** Compare the X coordinate of a group element (jacobian). */
-int secp256k1_gej_eq_x_var(const secp256k1_fe *x, const secp256k1_gej *a);
+static int secp256k1_gej_eq_x_var(const secp256k1_fe *x, const secp256k1_gej *a);
 
 /** Set r equal to the inverse of a (i.e., mirrored around the X axis) */
 void secp256k1_gej_neg(secp256k1_gej *r, const secp256k1_gej *a);
 
 /** Check whether a group element is the point at infinity. */
-int secp256k1_gej_is_infinity(const secp256k1_gej *a);
+static int secp256k1_gej_is_infinity(const secp256k1_gej *a);
 
 /** Set r equal to the double of a. Constant time. */
-void secp256k1_gej_double(secp256k1_gej *r, const secp256k1_gej *a);
+static void secp256k1_gej_double(secp256k1_gej *r, const secp256k1_gej *a);
 
 /** Set r equal to the double of a. If rzr is not-NULL this sets *rzr such that r->z == a->z * *rzr (where infinity means an implicit z = 0). */
-void secp256k1_gej_double_var(secp256k1_gej *r, const secp256k1_gej *a, secp256k1_fe *rzr);
+static void secp256k1_gej_double_var(secp256k1_gej *r, const secp256k1_gej *a, secp256k1_fe *rzr);
 
 /** Set r equal to the sum of a and b. If rzr is non-NULL this sets *rzr such that r->z == a->z * *rzr (a cannot be infinity in that case). */
 void secp256k1_gej_add_var(secp256k1_gej *r, const secp256k1_gej *a, const secp256k1_gej *b, secp256k1_fe *rzr);
 
 /** Set r equal to the sum of a and b (with b given in affine coordinates, and not infinity). */
-void secp256k1_gej_add_ge(secp256k1_gej *r, const secp256k1_gej *a, const secp256k1_ge *b);
+static void secp256k1_gej_add_ge(secp256k1_gej *r, const secp256k1_gej *a, const secp256k1_ge *b);
 
 /** Set r equal to the sum of a and b (with b given in affine coordinates). This is more efficient
     than secp256k1_gej_add_var. It is identical to secp256k1_gej_add_ge but without constant-time
     guarantee, and b is allowed to be infinity. If rzr is non-NULL this sets *rzr such that r->z == a->z * *rzr (a cannot be infinity in that case). */
-void secp256k1_gej_add_ge_var(secp256k1_gej *r, const secp256k1_gej *a, const secp256k1_ge *b, secp256k1_fe *rzr);
+static void secp256k1_gej_add_ge_var(secp256k1_gej *r, const secp256k1_gej *a, const secp256k1_ge *b, secp256k1_fe *rzr);
 
 /** Set r equal to the sum of a and b (with the inverse of b's Z coordinate passed as bzinv). */
-void secp256k1_gej_add_zinv_var(secp256k1_gej *r, const secp256k1_gej *a, const secp256k1_ge *b, const secp256k1_fe *bzinv);
+static void secp256k1_gej_add_zinv_var(secp256k1_gej *r, const secp256k1_gej *a, const secp256k1_ge *b, const secp256k1_fe *bzinv);
 
 /** Set r to be equal to lambda times a, where lambda is chosen in a way such that this is very fast. */
-void secp256k1_ge_mul_lambda(secp256k1_ge *r, const secp256k1_ge *a);
+static void secp256k1_ge_mul_lambda(secp256k1_ge *r, const secp256k1_ge *a);
 
 /** Clear a secp256k1_gej to prevent leaking sensitive information. */
-void secp256k1_gej_clear(secp256k1_gej *r);
+static void secp256k1_gej_clear(secp256k1_gej *r);
 
 /** Clear a secp256k1_ge to prevent leaking sensitive information. */
-void secp256k1_ge_clear(secp256k1_ge *r);
+static void secp256k1_ge_clear(secp256k1_ge *r);
 
 /** Convert a group element to the storage type. */
-void secp256k1_ge_to_storage(secp256k1_ge_storage *r, const secp256k1_ge *a);
+static void secp256k1_ge_to_storage(secp256k1_ge_storage *r, const secp256k1_ge *a);
 
 /** Convert a group element back from the storage type. */
-void secp256k1_ge_from_storage(secp256k1_ge *r, const secp256k1_ge_storage *a);
+static void secp256k1_ge_from_storage(secp256k1_ge *r, const secp256k1_ge_storage *a);
 
 /** If flag is true, set *r equal to *a; otherwise leave it. Constant-time.  Both *r and *a must be initialized.*/
-
-void secp256k1_gej_cmov(secp256k1_gej *r, const secp256k1_gej *a, int flag);
+static void secp256k1_gej_cmov(secp256k1_gej *r, const secp256k1_gej *a, int flag);
 
 /** If flag is true, set *r equal to *a; otherwise leave it. Constant-time.  Both *r and *a must be initialized.*/
-void secp256k1_ge_storage_cmov(secp256k1_ge_storage *r, const secp256k1_ge_storage *a, int flag);
+static void secp256k1_ge_storage_cmov(secp256k1_ge_storage *r, const secp256k1_ge_storage *a, int flag);
 
 /** Rescale a jacobian point by b which must be non-zero. Constant-time. */
-void secp256k1_gej_rescale(secp256k1_gej *r, const secp256k1_fe *b);
+static void secp256k1_gej_rescale(secp256k1_gej *r, const secp256k1_fe *b);
 
 /** Determine if a point (which is assumed to be on the curve) is in the correct (sub)group of the curve.
  *
@@ -164,6 +162,6 @@ void secp256k1_gej_rescale(secp256k1_gej *r, const secp256k1_fe *b);
  * (very) small subgroup, and that subgroup is what is used for all cryptographic operations. In that mode, this
  * function checks whether a point that is on the curve is in fact also in that subgroup.
  */
-int secp256k1_ge_is_in_correct_subgroup(const secp256k1_ge* ge);
+static int secp256k1_ge_is_in_correct_subgroup(const secp256k1_ge* ge);
 
 #endif /* SECP256K1_GROUP_H */
