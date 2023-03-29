@@ -8,13 +8,14 @@ fn main() {
     const REPO_NAME: &str = "secp256k1";
     const COMMIT_SHA: &str = "2bca0a5cbf756dd4ff1f0bda4585a7d3c64e1480";
 
-    let url = format!("https://github.com/{USER}/{REPO_NAME}/archive/{COMMIT_SHA}.zip");
+    let url = &format!("https://github.com/{USER}/{REPO_NAME}/archive/{COMMIT_SHA}.zip");
 
-    let output_dir = format!("./p256k1/_{REPO_NAME}");
+    let output_dir = &format!("./p256k1/_{REPO_NAME}");
     if Path::new(&output_dir).exists() {
         fs::remove_dir_all(&output_dir).unwrap();
     }
 
+    // unpack
     {
         const ZIP: &str = "tmp.zip";
         Command::new("curl")
@@ -35,7 +36,34 @@ fn main() {
         fs::remove_dir_all(TMP_DIR).unwrap();
     }
 
-    //
+    // apply patches
+    {
+        let file_name = &format!("{output_dir}/include/secp256k1.h");
+        patch(file_name, |s| {
+            s.replace(
+                "#define SECP256K1_H\n",
+                "#define SECP256K1_H\n\n#include \"../../_p256k1.h\"\n",
+            )
+        });
+        patch_dir(output_dir);
+
+        fn patch(file_name: &str, f: impl Fn(String) -> String) {
+            fs::write(file_name, f(fs::read_to_string(file_name).unwrap())).unwrap();
+        }
+
+        fn patch_dir(dir: &str) {
+            for r in fs::read_dir(dir).unwrap() {
+                let d = r.unwrap();
+                if d.file_type().unwrap().is_file() {
+                    patch(d.path().to_str().unwrap(), |s| s);
+                } else {
+                    patch_dir(d.path().to_str().unwrap());
+                }
+            }
+        }
+    }
+
+    // get list of externs
     const PREFIX_FILE: &str = "./p256k1/_p256k1.h";
     let list = {
         const TMP_BINDINGS: &str = "./tmp_bindings.rs";
