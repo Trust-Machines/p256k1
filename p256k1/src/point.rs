@@ -20,7 +20,7 @@ use crate::bindings::{
 
 use crate::_rename::{
     secp256k1_ecmult, secp256k1_ecmult_multi_var, secp256k1_fe_get_b32, secp256k1_fe_is_odd,
-    secp256k1_fe_normalize_var, secp256k1_fe_set_b32, secp256k1_ge_set_gej,
+    secp256k1_fe_normalize_var, secp256k1_fe_set_b32, secp256k1_ge_set_gej_const,
     secp256k1_ge_set_xo_var, secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_gej_set_ge,
     secp256k1_scratch_space_create, secp256k1_scratch_space_destroy,
 };
@@ -126,7 +126,7 @@ extern "C" fn ecmult_multi_callback(
         };
 
         let gej = &(*sp).p[idx].gej as *const secp256k1_gej;
-        secp256k1_ge_set_gej(&mut ge, gej);
+        secp256k1_ge_set_gej_const(&mut ge, gej);
 
         *sc = (*sp).s[idx].scalar;
         *pt = ge;
@@ -169,7 +169,7 @@ impl Point {
                 infinity: 0,
             };
 
-            secp256k1_ge_set_gej(&mut ge, &self.gej);
+            secp256k1_ge_set_gej_const(&mut ge, &self.gej);
             secp256k1_fe_normalize_var(&mut ge.x);
             secp256k1_fe_normalize_var(&mut ge.y);
 
@@ -237,7 +237,7 @@ impl Point {
         };
 
         unsafe {
-            secp256k1_ge_set_gej(&mut ge, &self.gej);
+            secp256k1_ge_set_gej_const(&mut ge, &self.gej);
             secp256k1_fe_is_odd(&ge.y) == 0
         }
     }
@@ -251,7 +251,7 @@ impl Point {
         };
 
         unsafe {
-            secp256k1_ge_set_gej(&mut ge, &self.gej);
+            secp256k1_ge_set_gej_const(&mut ge, &self.gej);
             secp256k1_fe_normalize_var(&mut ge.x);
             field::Element { fe: ge.x }
         }
@@ -266,7 +266,7 @@ impl Point {
         };
 
         unsafe {
-            secp256k1_ge_set_gej(&mut ge, &self.gej);
+            secp256k1_ge_set_gej_const(&mut ge, &self.gej);
             secp256k1_fe_normalize_var(&mut ge.y);
             field::Element { fe: ge.y }
         }

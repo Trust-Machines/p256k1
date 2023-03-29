@@ -11,3 +11,4 @@
 #include "_secp256k1/src/ecmult_const_impl.h"
 #include "_secp256k1/src/ecmult_gen_impl.h"
 #include "_secp256k1/src/scratch_impl.h"
+#include "p256k1.h"

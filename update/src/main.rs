@@ -153,7 +153,7 @@ fn main() {
 
         write_file(
             PREFIX_FILE,
-            &["#ifndef P256K1_H", "#define P256K1_H"],
+            &["#ifndef GP256K1_H", "#define GP256K1_H"],
             list.iter().map(|v| format!("#define {v} {}", prefix(v))),
             &["#endif", ""],
         );
