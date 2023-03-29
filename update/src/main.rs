@@ -46,18 +46,6 @@ fn main() {
                 &format!("{BEGIN}\n#include \"../../_p256k1.h\"\n"),
             );
         }
-        {
-            patch(
-                &format!("{output_dir}/src/group.h"),
-                "void secp256k1_ge_set_gej(secp256k1_ge *r, secp256k1_gej *a)",
-                "void secp256k1_ge_set_gej(secp256k1_ge *r, const secp256k1_gej *a)",
-            );
-            patch(
-                &format!("{output_dir}/src/group_impl.h"),
-                GE_SET_GEJ_FROM,
-                GE_SET_GEJ_TO,
-            );
-        }
         patch_dir(output_dir);
 
         fn patch(file_name: &str, from: &str, to: &str) {
@@ -84,6 +72,7 @@ fn main() {
                             "secp256k1_fe_negate",
                             "secp256k1_fe_normalize",
                             "secp256k1_fe_normalize_var",
+                            "secp256k1_fe_sqr",
                             "secp256k1_ecmult",
                             "secp256k1_scalar_add",
                             "secp256k1_fe_set_b32",
@@ -96,7 +85,6 @@ fn main() {
                             "secp256k1_scalar_set_b32",
                             "secp256k1_scalar_set_int",
                             "secp256k1_ecmult_multi_var",
-                            "secp256k1_ge_set_gej",
                             "secp256k1_ge_set_xo_var",
                             "secp256k1_gej_add_var",
                             "secp256k1_gej_neg",
@@ -194,32 +182,6 @@ fn main() {
         }
     }
 }
-
-const GE_SET_GEJ_FROM: &str = r"void secp256k1_ge_set_gej(secp256k1_ge *r, secp256k1_gej *a) {
-    secp256k1_fe z2, z3;
-    r->infinity = a->infinity;
-    secp256k1_fe_inv(&a->z, &a->z);
-    secp256k1_fe_sqr(&z2, &a->z);
-    secp256k1_fe_mul(&z3, &a->z, &z2);
-    secp256k1_fe_mul(&a->x, &a->x, &z2);
-    secp256k1_fe_mul(&a->y, &a->y, &z3);
-    secp256k1_fe_set_int(&a->z, 1);
-    r->x = a->x;
-    r->y = a->y;
-}";
-
-const GE_SET_GEJ_TO: &str = r"void secp256k1_ge_set_gej(secp256k1_ge *r, const secp256k1_gej *a) {
-    secp256k1_fe z2, z3, az, ax, ay;
-    r->infinity = a->infinity;
-    secp256k1_fe_inv(&az, &a->z);
-    secp256k1_fe_sqr(&z2, &az);
-    secp256k1_fe_mul(&z3, &az, &z2);
-    secp256k1_fe_mul(&ax, &a->x, &z2);
-    secp256k1_fe_mul(&ay, &a->y, &z3);
-    secp256k1_fe_set_int(&az, 1);
-    r->x = ax;
-    r->y = ay;
-}";
 
 trait CommandEx {
     fn status_unwrap(&mut self);

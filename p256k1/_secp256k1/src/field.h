@@ -101,7 +101,7 @@ void secp256k1_fe_mul(secp256k1_fe *r, const secp256k1_fe *a, const secp256k1_fe
 
 /** Sets a field element to be the square of another. Requires the input's magnitude to be at most 8.
  *  The output magnitude is 1 (but not guaranteed to be normalized). */
-static void secp256k1_fe_sqr(secp256k1_fe *r, const secp256k1_fe *a);
+void secp256k1_fe_sqr(secp256k1_fe *r, const secp256k1_fe *a);
 
 /** If a has a square root, it is computed in r and 1 is returned. If a does not
  *  have a square root, the root of its negation is computed and 0 is returned.
