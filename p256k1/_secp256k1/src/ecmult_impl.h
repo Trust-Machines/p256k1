@@ -97,7 +97,7 @@ static void secp256k1_ecmult_odd_multiples_table(int n, secp256k1_ge *pre_a, sec
     secp256k1_gej_set_ge(&ai, &pre_a[0]);
     ai.z = a->z;
 
-    /* pre_a[0] is the point (a.x*C^2, a.y*C^3, a.z*C) which is equvalent to a.
+    /* pre_a[0] is the point (a.x*C^2, a.y*C^3, a.z*C) which is equivalent to a.
      * Set zr[0] to C, which is the ratio between the omitted z(pre_a[0]) value and a.z.
      */
     zr[0] = d.z;
@@ -114,13 +114,16 @@ static void secp256k1_ecmult_odd_multiples_table(int n, secp256k1_ge *pre_a, sec
     secp256k1_fe_mul(z, &ai.z, &d.z);
 }
 
-#define SECP256K1_ECMULT_TABLE_VERIFY(n,w) \
-    VERIFY_CHECK(((n) & 1) == 1); \
-    VERIFY_CHECK((n) >= -((1 << ((w)-1)) - 1)); \
+SECP256K1_INLINE static void secp256k1_ecmult_table_verify(int n, int w) {
+    (void)n;
+    (void)w;
+    VERIFY_CHECK(((n) & 1) == 1);
+    VERIFY_CHECK((n) >= -((1 << ((w)-1)) - 1));
     VERIFY_CHECK((n) <=  ((1 << ((w)-1)) - 1));
+}
 
 SECP256K1_INLINE static void secp256k1_ecmult_table_get_ge(secp256k1_ge *r, const secp256k1_ge *pre, int n, int w) {
-    SECP256K1_ECMULT_TABLE_VERIFY(n,w)
+    secp256k1_ecmult_table_verify(n,w);
     if (n > 0) {
         *r = pre[(n-1)/2];
     } else {
@@ -130,7 +133,7 @@ SECP256K1_INLINE static void secp256k1_ecmult_table_get_ge(secp256k1_ge *r, cons
 }
 
 SECP256K1_INLINE static void secp256k1_ecmult_table_get_ge_lambda(secp256k1_ge *r, const secp256k1_ge *pre, const secp256k1_fe *x, int n, int w) {
-    SECP256K1_ECMULT_TABLE_VERIFY(n,w)
+    secp256k1_ecmult_table_verify(n,w);
     if (n > 0) {
         secp256k1_ge_set_xy(r, &x[(n-1)/2], &pre[(n-1)/2].y);
     } else {
@@ -140,7 +143,7 @@ SECP256K1_INLINE static void secp256k1_ecmult_table_get_ge_lambda(secp256k1_ge *
 }
 
 SECP256K1_INLINE static void secp256k1_ecmult_table_get_ge_storage(secp256k1_ge *r, const secp256k1_ge_storage *pre, int n, int w) {
-    SECP256K1_ECMULT_TABLE_VERIFY(n,w)
+    secp256k1_ecmult_table_verify(n,w);
     if (n > 0) {
         secp256k1_ge_from_storage(r, &pre[(n-1)/2]);
     } else {
@@ -341,8 +344,7 @@ static void secp256k1_ecmult_strauss_wnaf(const struct secp256k1_strauss_state *
     }
 }
 
-
-void secp256k1_ecmult(secp256k1_gej *r, const secp256k1_gej *a, const secp256k1_scalar *na, const secp256k1_scalar *ng) {
+static void secp256k1_ecmult(secp256k1_gej *r, const secp256k1_gej *a, const secp256k1_scalar *na, const secp256k1_scalar *ng) {
     secp256k1_fe aux[ECMULT_TABLE_SIZE(WINDOW_A)];
     secp256k1_ge pre_a[ECMULT_TABLE_SIZE(WINDOW_A)];
     struct secp256k1_strauss_point_state ps[1];
@@ -815,7 +817,7 @@ static int secp256k1_ecmult_multi_batch_size_helper(size_t *n_batches, size_t *n
 }
 
 typedef int (*secp256k1_ecmult_multi_func)(const secp256k1_callback* error_callback, secp256k1_scratch*, secp256k1_gej*, const secp256k1_scalar*, secp256k1_ecmult_multi_callback cb, void*, size_t);
-int secp256k1_ecmult_multi_var(const secp256k1_callback* error_callback, secp256k1_scratch *scratch, secp256k1_gej *r, const secp256k1_scalar *inp_g_sc, secp256k1_ecmult_multi_callback cb, void *cbdata, size_t n) {
+static int secp256k1_ecmult_multi_var(const secp256k1_callback* error_callback, secp256k1_scratch *scratch, secp256k1_gej *r, const secp256k1_scalar *inp_g_sc, secp256k1_ecmult_multi_callback cb, void *cbdata, size_t n) {
     size_t i;
 
     int (*f)(const secp256k1_callback* error_callback, secp256k1_scratch*, secp256k1_gej*, const secp256k1_scalar*, secp256k1_ecmult_multi_callback cb, void*, size_t, size_t);

@@ -4,9 +4,9 @@ use std::{fs, path::Path, process::Command};
 use syn::{ForeignItem, Ident, Item};
 
 fn main() {
-    const USER: &str = "Trust-Machines";
+    const USER: &str = "bitcoin-core";
     const REPO_NAME: &str = "secp256k1";
-    const COMMIT_SHA: &str = "41b6073611725d2e12ac7a72d3da3d46fd43f932";
+    const COMMIT_SHA: &str = "2bca0a5cbf756dd4ff1f0bda4585a7d3c64e1480";
 
     let url = format!("https://github.com/{USER}/{REPO_NAME}/archive/{COMMIT_SHA}.zip");
 
