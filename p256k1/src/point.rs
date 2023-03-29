@@ -121,18 +121,9 @@ extern "C" fn ecmult_multi_callback(
 ) -> ::std::os::raw::c_int {
     unsafe {
         let sp: *mut ScalarsPoints = data as *mut ScalarsPoints;
-
-        let mut ge = secp256k1_ge {
-            x: secp256k1_fe { n: [0; 5] },
-            y: secp256k1_fe { n: [0; 5] },
-            infinity: 0,
-        };
-
-        let gej = &(*sp).p[idx].gej;
-        secp256k1_ge_set_gej(&mut ge, gej);
-
+        
+        secp256k1_ge_set_gej(&mut *pt, &(*sp).p[idx].gej);
         *sc = (*sp).s[idx].scalar;
-        *pt = ge;
     }
 
     1
