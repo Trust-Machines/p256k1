@@ -1,3 +1,6 @@
+use base58::{FromBase58, FromBase58Error};
+use std::array::TryFromSliceError;
+
 use crate::_rename::{
     secp256k1_ec_pubkey_create, secp256k1_ec_pubkey_parse, secp256k1_ec_pubkey_serialize,
     secp256k1_ecdsa_sign, secp256k1_ecdsa_signature_parse_compact,
@@ -6,7 +9,13 @@ use crate::_rename::{
 use crate::bindings::{secp256k1_ecdsa_signature, secp256k1_pubkey, SECP256K1_EC_COMPRESSED};
 use crate::context::Context;
 use crate::scalar::Scalar;
-use std::array::TryFromSliceError;
+
+/// Errors when converting scalars
+#[derive(Debug)]
+pub enum ConversionError {
+    /// Error converting a base58 string to bytes
+    Base58(FromBase58Error),
+}
 
 #[derive(Debug)]
 /// Errors in ECDSA signature operations
@@ -17,6 +26,8 @@ pub enum Error {
     InvalidPublicKey,
     /// Error occurred during a try from operation
     TryFrom(String),
+    /// Error converting a scalar
+    Conversion(ConversionError),
 }
 
 impl From<TryFromSliceError> for Error {
@@ -26,14 +37,14 @@ impl From<TryFromSliceError> for Error {
 }
 
 /**
-PubKey is a wrapper around libsecp256k1's secp256k1_pubkey struct.
+PublicKey is a wrapper around libsecp256k1's secp256k1_pubkey struct.
 */
-pub struct PubKey {
+pub struct PublicKey {
     /// The wrapped secp256k1_pubkey public key
     key: secp256k1_pubkey,
 }
 
-impl PubKey {
+impl PublicKey {
     /// Construct a public key from a given secret key
     pub fn new(sec_key: &Scalar) -> Result<Self, Error> {
         let mut pub_key = Self {
@@ -69,7 +80,18 @@ impl PubKey {
     }
 }
 
-impl TryFrom<&[u8]> for PubKey {
+impl TryFrom<&str> for PublicKey {
+    type Error = Error;
+    /// Create a pubkey from the passed byte slice
+    fn try_from(s: &str) -> Result<Self, self::Error> {
+        match s.from_base58() {
+            Ok(bytes) => PublicKey::try_from(&bytes[..]),
+            Err(e) => Err(Error::Conversion(ConversionError::Base58(e))),
+        }
+    }
+}
+
+impl TryFrom<&[u8]> for PublicKey {
     type Error = Error;
     /// Create a pubkey from the passed byte slice
     fn try_from(input: &[u8]) -> Result<Self, Self::Error> {
@@ -125,7 +147,7 @@ impl Signature {
     }
 
     /// Verify an ECDSA signature
-    pub fn verify(&self, hash: &[u8], pub_key: &PubKey) -> bool {
+    pub fn verify(&self, hash: &[u8], pub_key: &PublicKey) -> bool {
         1 == unsafe {
             secp256k1_ecdsa_verify(
                 self.context.context,
@@ -198,7 +220,7 @@ mod tests {
         // Generate a secret and public key
         let mut rnd = OsRng::default();
         let sec_key = Scalar::random(&mut rnd);
-        let pub_key = PubKey::new(&sec_key).unwrap();
+        let pub_key = PublicKey::new(&sec_key).unwrap();
 
         // Instead of signing a message directly, must sign a 32-byte hash of it.
         let msg = b"Hello, world!";
@@ -257,10 +279,10 @@ mod tests {
         // Generate a secret and public key
         let mut rnd = OsRng::default();
         let sec_key = Scalar::random(&mut rnd);
-        let pub_key = PubKey::new(&sec_key).unwrap();
+        let pub_key = PublicKey::new(&sec_key).unwrap();
 
         //Serialize with try_from and deseriailze with to_bytes
-        let pub_key_2 = PubKey::try_from(pub_key.to_bytes().as_slice()).unwrap();
+        let pub_key_2 = PublicKey::try_from(pub_key.to_bytes().as_slice()).unwrap();
         assert_eq!(pub_key_2.to_bytes(), pub_key.to_bytes());
         assert_eq!(pub_key_2.key.data, pub_key.key.data);
     }
