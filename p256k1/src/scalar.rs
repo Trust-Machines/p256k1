@@ -68,6 +68,15 @@ impl Scalar {
         }
     }
 
+    /// Get a u32 from the last 4 bytes of this scalar
+    pub fn get_u32(&self) -> u32 {
+        let bytes = self.to_bytes();
+        let mut u32_be_bytes = [0u8; 4];
+        u32_be_bytes.copy_from_slice(&bytes[28..]);
+
+        u32::from_be_bytes(u32_be_bytes)
+    }
+
     /// Return the multiplicative inverse of this scalar
     pub fn invert(&self) -> Scalar {
         let mut r = Scalar::new();
@@ -639,6 +648,17 @@ mod tests {
         for x in 0..0xff {
             let s = Scalar::from(x);
             assert_eq!(s.to_bytes()[31], x as u8);
+        }
+    }
+
+    #[test]
+    fn get_u32() {
+        let mut rng = OsRng::default();
+
+        for _ in 0..0xff {
+            let x = rng.next_u32();
+            let s = Scalar::from(x);
+            assert_eq!(x, s.get_u32());
         }
     }
 
