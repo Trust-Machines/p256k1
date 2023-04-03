@@ -1,4 +1,4 @@
-use base58::{FromBase58, FromBase58Error, ToBase58};
+use base58::{FromBase58, ToBase58};
 use core::{
     cmp::{Eq, PartialEq},
     convert::{From, TryFrom},
@@ -62,7 +62,7 @@ pub const N: [u8; 32] = [
     0xBA, 0xAE, 0xDC, 0xE6, 0xAF, 0x48, 0xA0, 0x3B, 0xBF, 0xD2, 0x5E, 0x8C, 0xD0, 0x36, 0x41, 0x41,
 ];
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 /// Errors when converting points
 pub enum ConversionError {
     /// Error decompressing a point into a field element
@@ -72,10 +72,10 @@ pub enum ConversionError {
     /// Error converting a byte slice into Compressed
     WrongNumberOfBytes(usize),
     /// Error converting a base58 string to bytes
-    Base58(FromBase58Error),
+    Base58(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 /// Errors in point operations
 pub enum Error {
     /// Error doing multi-exponentiation
@@ -636,7 +636,10 @@ impl TryFrom<&str> for Compressed {
     fn try_from(s: &str) -> Result<Self, Error> {
         match s.from_base58() {
             Ok(bytes) => Compressed::try_from(&bytes[..]),
-            Err(e) => Err(Error::Conversion(ConversionError::Base58(e))),
+            Err(e) => Err(Error::Conversion(ConversionError::Base58(format!(
+                "{:?}",
+                e
+            )))),
         }
     }
 }

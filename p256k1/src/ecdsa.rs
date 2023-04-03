@@ -1,4 +1,4 @@
-use base58::{FromBase58, FromBase58Error};
+use base58::FromBase58;
 use std::array::TryFromSliceError;
 
 use crate::_rename::{
@@ -11,13 +11,13 @@ use crate::context::Context;
 use crate::scalar::Scalar;
 
 /// Errors when converting scalars
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ConversionError {
     /// Error converting a base58 string to bytes
-    Base58(FromBase58Error),
+    Base58(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 /// Errors in ECDSA signature operations
 pub enum Error {
     /// Error occurred due to invalid secret key
@@ -86,7 +86,10 @@ impl TryFrom<&str> for PublicKey {
     fn try_from(s: &str) -> Result<Self, self::Error> {
         match s.from_base58() {
             Ok(bytes) => PublicKey::try_from(&bytes[..]),
-            Err(e) => Err(Error::Conversion(ConversionError::Base58(e))),
+            Err(e) => Err(Error::Conversion(ConversionError::Base58(format!(
+                "{:?}",
+                e
+            )))),
         }
     }
 }

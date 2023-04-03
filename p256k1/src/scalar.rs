@@ -1,4 +1,4 @@
-use base58::{FromBase58, FromBase58Error, ToBase58};
+use base58::{FromBase58, ToBase58};
 use bitvec::prelude::*;
 use core::{
     cmp::{Eq, PartialEq},
@@ -19,16 +19,16 @@ use crate::bindings::secp256k1_scalar;
 
 use crate::point::Point;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 /// Errors when converting scalars
 pub enum ConversionError {
     /// Error converting a byte slice into Scalar
     WrongNumberOfBytes(usize),
     /// Error converting a base58 string to bytes
-    Base58(FromBase58Error),
+    Base58(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 /// Errors in scalar operations
 pub enum Error {
     /// Error converting a scalar
@@ -251,7 +251,10 @@ impl TryFrom<&str> for Scalar {
     fn try_from(s: &str) -> Result<Self, Error> {
         match s.from_base58() {
             Ok(bytes) => Scalar::try_from(&bytes[..]),
-            Err(e) => Err(Error::Conversion(ConversionError::Base58(e))),
+            Err(e) => Err(Error::Conversion(ConversionError::Base58(format!(
+                "{:?}",
+                e
+            )))),
         }
     }
 }
