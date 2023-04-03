@@ -25,7 +25,7 @@ pub const P: [u8; 32] = [
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE, 0xFF, 0xFF, 0xFC, 0x2F,
 ];
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 /// Errors when converting field elements
 pub enum ConversionError {
     /// Error converting a byte slice into element
@@ -34,7 +34,7 @@ pub enum ConversionError {
     Base58(FromBase58Error),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 /// Errors in field element operations
 pub enum Error {
     /// Error converting an element

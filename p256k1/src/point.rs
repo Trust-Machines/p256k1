@@ -62,7 +62,7 @@ pub const N: [u8; 32] = [
     0xBA, 0xAE, 0xDC, 0xE6, 0xAF, 0x48, 0xA0, 0x3B, 0xBF, 0xD2, 0x5E, 0x8C, 0xD0, 0x36, 0x41, 0x41,
 ];
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 /// Errors when converting points
 pub enum ConversionError {
     /// Error decompressing a point into a field element
@@ -75,7 +75,7 @@ pub enum ConversionError {
     Base58(FromBase58Error),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 /// Errors in point operations
 pub enum Error {
     /// Error doing multi-exponentiation

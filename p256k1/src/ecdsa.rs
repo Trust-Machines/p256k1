@@ -11,13 +11,13 @@ use crate::context::Context;
 use crate::scalar::Scalar;
 
 /// Errors when converting scalars
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ConversionError {
     /// Error converting a base58 string to bytes
     Base58(FromBase58Error),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 /// Errors in ECDSA signature operations
 pub enum Error {
     /// Error occurred due to invalid secret key

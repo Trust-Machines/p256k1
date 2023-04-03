@@ -28,7 +28,7 @@ pub enum ConversionError {
     Base58(FromBase58Error),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 /// Errors in scalar operations
 pub enum Error {
     /// Error converting a scalar
