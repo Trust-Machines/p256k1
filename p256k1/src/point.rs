@@ -1,4 +1,4 @@
-use base58::{FromBase58, FromBase58Error, ToBase58};
+use base58::{FromBase58, ToBase58};
 use core::{
     cmp::{Eq, PartialEq},
     convert::{From, TryFrom},
@@ -72,7 +72,7 @@ pub enum ConversionError {
     /// Error converting a byte slice into Compressed
     WrongNumberOfBytes(usize),
     /// Error converting a base58 string to bytes
-    Base58(FromBase58Error),
+    Base58(String),
 }
 
 #[derive(Debug, Clone)]
@@ -636,7 +636,10 @@ impl TryFrom<&str> for Compressed {
     fn try_from(s: &str) -> Result<Self, Error> {
         match s.from_base58() {
             Ok(bytes) => Compressed::try_from(&bytes[..]),
-            Err(e) => Err(Error::Conversion(ConversionError::Base58(e))),
+            Err(e) => Err(Error::Conversion(ConversionError::Base58(format!(
+                "{:?}",
+                e
+            )))),
         }
     }
 }
