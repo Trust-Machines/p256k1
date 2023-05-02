@@ -39,6 +39,7 @@ impl From<TryFromSliceError> for Error {
 /**
 PublicKey is a wrapper around libsecp256k1's secp256k1_pubkey struct.
 */
+#[derive(Clone, Copy)]
 pub struct PublicKey {
     /// The wrapped secp256k1_pubkey public key
     key: secp256k1_pubkey,
