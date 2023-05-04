@@ -1,5 +1,5 @@
 use bitvec::prelude::*;
-use bs58::{self, decode::Error as DecodeError, encode::Error as EncodeError};
+use bs58;
 use core::{
     cmp::{Eq, PartialEq},
     convert::{From, TryFrom},
@@ -17,6 +17,8 @@ use crate::_rename::{
 };
 use crate::bindings::secp256k1_fe;
 
+use crate::errors::{Base58Error, ConversionError};
+
 use crate::scalar::Scalar;
 
 /// Field size
@@ -24,29 +26,6 @@ pub const P: [u8; 32] = [
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE, 0xFF, 0xFF, 0xFC, 0x2F,
 ];
-
-/// Re-export of crate `bs58`'s decode error
-pub type Base58DecodeError = DecodeError;
-/// Re-export of crate `bs58`'s encode error
-pub type Base58EncodeError = EncodeError;
-
-#[derive(Debug, Clone)]
-/// Base58-related errors
-pub enum Base58Error {
-    /// Error decoding
-    Decode(Base58DecodeError),
-    /// Error encoding
-    Encode(Base58EncodeError),
-}
-
-#[derive(Debug, Clone)]
-/// Errors when converting field elements
-pub enum ConversionError {
-    /// Error converting a byte slice into element
-    WrongNumberOfBytes(usize),
-    /// Error converting a base58 string to bytes
-    Base58(Base58Error),
-}
 
 #[derive(Debug, Clone)]
 /// Errors in field element operations
