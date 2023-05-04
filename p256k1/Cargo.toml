@@ -14,7 +14,7 @@ categories = ["api-bindings", "cryptography", "mathematics"]
 
 [dependencies]
 bitvec = "1.0.1"
-bs58 = "0.4.0"
+bs58 = "0.4"
 hex = "0.4"
 num-traits = "0.2"
 primitive-types = "0.12"
