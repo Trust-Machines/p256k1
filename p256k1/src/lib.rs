@@ -20,6 +20,9 @@ pub mod context;
 /// ECDSA operations
 pub mod ecdsa;
 
+/// Errors
+pub mod errors;
+
 /// Point operations on the secp256k1 curve
 pub mod point;
 

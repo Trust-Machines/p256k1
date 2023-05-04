@@ -1,5 +1,5 @@
-use base58::{FromBase58, ToBase58};
 use bitvec::prelude::*;
+use bs58;
 use core::{
     cmp::{Eq, PartialEq},
     convert::{From, TryFrom},
@@ -17,6 +17,8 @@ use crate::_rename::{
 };
 use crate::bindings::secp256k1_fe;
 
+use crate::errors::{Base58Error, ConversionError};
+
 use crate::scalar::Scalar;
 
 /// Field size
@@ -24,15 +26,6 @@ pub const P: [u8; 32] = [
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE, 0xFF, 0xFF, 0xFC, 0x2F,
 ];
-
-#[derive(Debug, Clone)]
-/// Errors when converting field elements
-pub enum ConversionError {
-    /// Error converting a byte slice into element
-    WrongNumberOfBytes(usize),
-    /// Error converting a base58 string to bytes
-    Base58(String),
-}
 
 #[derive(Debug, Clone)]
 /// Errors in field element operations
@@ -155,7 +148,7 @@ impl Default for Element {
 
 impl Display for Element {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        write!(f, "{}", self.to_bytes().to_base58())
+        write!(f, "{}", bs58::encode(self.to_bytes()).into_string())
     }
 }
 
@@ -221,19 +214,18 @@ impl TryFrom<&[u8]> for Element {
 impl TryFrom<&str> for Element {
     type Error = Error;
     fn try_from(s: &str) -> Result<Self, Error> {
-        match s.from_base58() {
+        match bs58::decode(s).into_vec() {
             Ok(bytes) => Element::try_from(&bytes[..]),
-            Err(e) => Err(Error::Conversion(ConversionError::Base58(format!(
-                "{:?}",
-                e
-            )))),
+            Err(e) => Err(Error::Conversion(ConversionError::Base58(
+                Base58Error::Decode(e),
+            ))),
         }
     }
 }
 
 impl From<Element> for String {
     fn from(s: Element) -> String {
-        s.to_bytes().to_base58()
+        bs58::encode(s.to_bytes()).into_string()
     }
 }
 
