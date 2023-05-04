@@ -6,7 +6,7 @@ use syn::{ForeignItem, Ident, Item};
 fn main() {
     const USER: &str = "bitcoin-core";
     const REPO_NAME: &str = "secp256k1";
-    const COMMIT_SHA: &str = "491b4cd29d52048321e3c72f7585ce59154c2072";
+    const COMMIT_SHA: &str = "c55290c0ae1031dcb8d8fed4fe3d6ab3f22c0511";
 
     let url = &format!("https://github.com/{USER}/{REPO_NAME}/archive/{COMMIT_SHA}.zip");
 
