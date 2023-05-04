@@ -1,4 +1,4 @@
-use base58::FromBase58;
+use bs58::{self, decode::Error as DecodeError};
 use std::array::TryFromSliceError;
 
 use crate::_rename::{
@@ -10,11 +10,21 @@ use crate::bindings::{secp256k1_ecdsa_signature, secp256k1_pubkey, SECP256K1_EC_
 use crate::context::Context;
 use crate::scalar::Scalar;
 
+/// Re-export of crate `bs58`'s decode error
+pub type Base58DecodeError = DecodeError;
+
+#[derive(Debug, Clone)]
+/// Base58-related errors
+pub enum Base58Error {
+    /// Error decoding
+    Decode(Base58DecodeError),
+}
+
 /// Errors when converting scalars
 #[derive(Debug, Clone)]
 pub enum ConversionError {
     /// Error converting a base58 string to bytes
-    Base58(String),
+    Base58(Base58Error),
 }
 
 #[derive(Debug, Clone)]
@@ -85,12 +95,11 @@ impl TryFrom<&str> for PublicKey {
     type Error = Error;
     /// Create a pubkey from the passed byte slice
     fn try_from(s: &str) -> Result<Self, self::Error> {
-        match s.from_base58() {
+        match bs58::decode(s).into_vec() {
             Ok(bytes) => PublicKey::try_from(&bytes[..]),
-            Err(e) => Err(Error::Conversion(ConversionError::Base58(format!(
-                "{:?}",
-                e
-            )))),
+            Err(e) => Err(Error::Conversion(ConversionError::Base58(
+                Base58Error::Decode(e),
+            ))),
         }
     }
 }

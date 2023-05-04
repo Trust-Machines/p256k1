@@ -1,4 +1,4 @@
-use base58::{FromBase58, ToBase58};
+use bs58::{self, decode::Error as DecodeError, encode::Error as EncodeError};
 use core::{
     cmp::{Eq, PartialEq},
     convert::{From, TryFrom},
@@ -62,6 +62,20 @@ pub const N: [u8; 32] = [
     0xBA, 0xAE, 0xDC, 0xE6, 0xAF, 0x48, 0xA0, 0x3B, 0xBF, 0xD2, 0x5E, 0x8C, 0xD0, 0x36, 0x41, 0x41,
 ];
 
+/// Re-export of crate `bs58`'s decode error
+pub type Base58DecodeError = DecodeError;
+/// Re-export of crate `bs58`'s encode error
+pub type Base58EncodeError = EncodeError;
+
+#[derive(Debug, Clone)]
+/// Base58-related errors
+pub enum Base58Error {
+    /// Error decoding
+    Decode(Base58DecodeError),
+    /// Error encoding
+    Encode(Base58EncodeError),
+}
+
 #[derive(Debug, Clone)]
 /// Errors when converting points
 pub enum ConversionError {
@@ -72,7 +86,7 @@ pub enum ConversionError {
     /// Error converting a byte slice into Compressed
     WrongNumberOfBytes(usize),
     /// Error converting a base58 string to bytes
-    Base58(String),
+    Base58(Base58Error),
 }
 
 #[derive(Debug, Clone)]
@@ -311,7 +325,7 @@ impl Debug for Point {
 impl Display for Point {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         let c = self.clone().compress();
-        write!(f, "{}", c.data.to_base58())
+        write!(f, "{}", bs58::encode(c.data).into_string())
     }
 }
 
@@ -612,7 +626,7 @@ impl From<[u8; 33]> for Compressed {
 
 impl From<Compressed> for String {
     fn from(c: Compressed) -> String {
-        c.data.to_base58()
+        bs58::encode(c.data).into_string()
     }
 }
 
@@ -634,12 +648,11 @@ impl TryFrom<&[u8]> for Compressed {
 impl TryFrom<&str> for Compressed {
     type Error = Error;
     fn try_from(s: &str) -> Result<Self, Error> {
-        match s.from_base58() {
+        match bs58::decode(s).into_vec() {
             Ok(bytes) => Compressed::try_from(&bytes[..]),
-            Err(e) => Err(Error::Conversion(ConversionError::Base58(format!(
-                "{:?}",
-                e
-            )))),
+            Err(e) => Err(Error::Conversion(ConversionError::Base58(
+                Base58Error::Decode(e),
+            ))),
         }
     }
 }
