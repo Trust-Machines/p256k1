@@ -117,7 +117,7 @@ impl Scalar {
         let mut square = *x;
 
         while n > 0 {
-            if n & 1 == 1 {
+            if n & 1 != 0 {
                 ret *= square;
             }
             square *= square;
@@ -133,7 +133,7 @@ impl Scalar {
         let mut square = *x;
 
         while n > 0 {
-            if n & 1 == 1 {
+            if n & 1 != 0 {
                 ret *= square;
             }
             square *= square;
