@@ -116,7 +116,7 @@ impl Scalar {
         let mut ret = Scalar::one();
         let mut square = *x;
 
-        while n > 0 {
+        while n != 0 {
             if n & 1 != 0 {
                 ret *= square;
             }
@@ -132,7 +132,7 @@ impl Scalar {
         let mut ret = Scalar::one();
         let mut square = *x;
 
-        while n > 0 {
+        while n != 0 {
             if n & 1 != 0 {
                 ret *= square;
             }
