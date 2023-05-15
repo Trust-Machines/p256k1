@@ -112,60 +112,32 @@ impl Scalar {
     }
 
     /// Fast exponentiation using the square and multiply algorithm
-    pub fn square_and_multiply_usize(x: &Scalar, n: usize) -> Scalar {
+    pub fn square_and_multiply_usize(x: &Scalar, mut n: usize) -> Scalar {
         let mut ret = Scalar::one();
         let mut square = *x;
 
-        if n == 0 {
-            return ret;
-        }
-
-        let mut i: usize = 1;
-        for byte in n.to_le_bytes() {
-            let bits = byte.view_bits::<Lsb0>();
-            for bit in bits {
-                if *bit {
-                    ret *= square;
-                }
-                if {
-                    i <<= 1;
-                    i
-                } > n
-                {
-                    return ret;
-                }
-                square *= square;
+        while n > 0 {
+            if n & 1 == 1 {
+                ret *= square;
             }
+            square *= square;
+            n >>= 1;
         }
 
         ret
     }
 
     /// Fast exponentiation using the square and multiply algorithm
-    pub fn square_and_multiply_u32(x: &Scalar, n: u32) -> Scalar {
+    pub fn square_and_multiply_u32(x: &Scalar, mut n: u32) -> Scalar {
         let mut ret = Scalar::one();
         let mut square = *x;
 
-        if n == 0 {
-            return ret;
-        }
-
-        let mut i: u32 = 1;
-        for byte in n.to_le_bytes() {
-            let bits = byte.view_bits::<Lsb0>();
-            for bit in bits {
-                if *bit {
-                    ret *= square;
-                }
-                if {
-                    i <<= 1;
-                    i
-                } > n
-                {
-                    return ret;
-                }
-                square *= square;
+        while n > 0 {
+            if n & 1 == 1 {
+                ret *= square;
             }
+            square *= square;
+            n >>= 1;
         }
 
         ret
