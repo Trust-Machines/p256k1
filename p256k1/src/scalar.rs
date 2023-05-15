@@ -120,8 +120,7 @@ impl Scalar {
             return ret;
         }
 
-        let log = n.ilog2() + 1;
-        let mut i: u32 = 0;
+        let mut i: usize = 1;
         for byte in n.to_le_bytes() {
             let bits = byte.view_bits::<Lsb0>();
             for bit in bits {
@@ -129,9 +128,9 @@ impl Scalar {
                     ret *= square;
                 }
                 if {
-                    i += 1;
+                    i <<= 1;
                     i
-                } > log
+                } > n
                 {
                     return ret;
                 }
@@ -151,8 +150,7 @@ impl Scalar {
             return ret;
         }
 
-        let log = n.ilog2() + 1;
-        let mut i: u32 = 0;
+        let mut i: u32 = 1;
         for byte in n.to_le_bytes() {
             let bits = byte.view_bits::<Lsb0>();
             for bit in bits {
@@ -160,9 +158,9 @@ impl Scalar {
                     ret *= square;
                 }
                 if {
-                    i += 1;
+                    i <<= 1;
                     i
-                } > log
+                } > n
                 {
                     return ret;
                 }
