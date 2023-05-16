@@ -41,6 +41,10 @@ criterion = "0.4.0"
 name = "point_bench"
 harness = false
 
+[[bench]]
+name = "scalar_bench"
+harness = false
+
 [lib]
 path = "src/lib.rs"    # The source file of the target.
 crate-type = ["lib"]   # The crate types to generate.
