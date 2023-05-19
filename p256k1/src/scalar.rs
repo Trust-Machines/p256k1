@@ -80,22 +80,6 @@ impl Scalar {
         r
     }
 
-    fn from_be_bytes(bytes: &[u8; 32]) -> Self {
-        let mut ret = Self::new();
-        let mut overflow = 0;
-        unsafe {
-            secp256k1_scalar_set_b32(&mut ret.scalar, bytes.as_ptr(), &mut overflow);
-        }
-        ret
-    }
-
-    fn from_be_u128(hi: u128, lo: u128) -> Self {
-        let mut bytes = [0u8; 32];
-        bytes[..16].clone_from_slice(&hi.to_be_bytes());
-        bytes[16..].clone_from_slice(&lo.to_be_bytes());
-        Self::from_be_bytes(&bytes)
-    }
-
     /// Return a byte array of the scalar's data in big endian
     pub fn to_bytes(&self) -> [u8; 32] {
         let mut bytes = [0u8; 32];
@@ -119,7 +103,7 @@ impl Scalar {
 
     #[inline]
     fn bit(bytes: &[u8; 32], i: u32) -> bool {
-        bytes[31 - i as usize / 8] >> i % 8 & 1 != 0
+        bytes[31 - i as usize / 8] >> (i % 8) & 1 != 0
     }
 
     /// Fast exponentiation using the square and multiply algorithm
@@ -793,6 +777,22 @@ mod tests {
         assert_eq!(s, t);
     }
 
+    fn from_be_bytes(bytes: &[u8; 32]) -> Scalar {
+        let mut ret = Scalar::new();
+        let mut overflow = 0;
+        unsafe {
+            secp256k1_scalar_set_b32(&mut ret.scalar, bytes.as_ptr(), &mut overflow);
+        }
+        ret
+    }
+
+    fn from_be_u128(hi: u128, lo: u128) -> Scalar {
+        let mut bytes = [0u8; 32];
+        bytes[..16].clone_from_slice(&hi.to_be_bytes());
+        bytes[16..].clone_from_slice(&lo.to_be_bytes());
+        from_be_bytes(&bytes)
+    }
+
     #[test]
     fn square_and_multiply_test() {
         let f = |v: u32, e: u32, hi, lo| {
@@ -801,7 +801,7 @@ mod tests {
             let r = sv.square_and_multiply(&se);
             let r64 = sv.square_and_multiply_u64(e as u64);
             assert_eq!(r, r64);
-            assert_eq!(r, Scalar::from_be_u128(hi, lo));
+            assert_eq!(r, from_be_u128(hi, lo));
         };
         f(0, 1, 0, 0);
         f(2, 2, 0, 4);
@@ -836,19 +836,84 @@ mod tests {
         f(0x1F, 0x1F, 0x2fd6882, 0x68dffc136e010737bf943f5988303fdf);
         f(0x20, 0x20, 0x100000000, 0x00000000000000000000000000000000);
         f(0x21, 0x21, 0x5857366dce, 0x0162cb5ddcd1bf0fc7c03a6438304421);
-        f(0x22, 0x22, 0x1f6c3801661b, 0xd342fb2dd4242160b680cc8400000000);
-        f(0x23, 0x23, 0xb82be3e380ccd, 0x769982ea6932282974ac767524dc12fb);
-        f(0x24, 0x24, 0x456bc60e76c111e, 0x679735c929f6a1000000000000000000);
-        f(0x25, 0x25, 0x1ae78c038561352ae, 0x951ee7b7b012ea77beec149af4096455);
-        f(0x26, 0x26, 0xab67135780fb07de43, 0xcb7a528e8aa6a1c35acf5e4000000000);
-        f(0x27, 0x27, 0x4611711e18402fcba1e0, 0xf25f47e1499550e185ef95055e658cd7);
-        f(0x28, 0x28, 0x1d6329f1c35ca4bfabb9f5, 0x61000000000000000000000000000000);
-        f(0x29, 0x29, 0xca32f2ece8b14b98f6f9690, 0x356201fde2f9d27da8c738877dc89369);
-        f(0x2A, 0x2A, 0x5919417cd6a11dbdf2f413657, 0xbbc03bc842ac76ef3932640000000000);
-        f(0x2B, 0x2B, 0x28350f997e1099d39257c99472a, 0x5022492baddad88dc77fef641843f433);
-        f(0x2C, 0x2C, 0x129236dc5d989e02fc561a2730656, 0x80110274110000000000000000000000);
-        f(0x2D, 0x2D, 0x8c6627f525d504a78b19877bbf5063, 0x9983d78ee5d721142426d07d99cae81d);
-        f(0x2E, 0x2E, 0x43d475ec0a902527f4a010f3dde187d9, 0xf3088a5b0d719423071c400000000000);
+        f(
+            0x22,
+            0x22,
+            0x1f6c3801661b,
+            0xd342fb2dd4242160b680cc8400000000,
+        );
+        f(
+            0x23,
+            0x23,
+            0xb82be3e380ccd,
+            0x769982ea6932282974ac767524dc12fb,
+        );
+        f(
+            0x24,
+            0x24,
+            0x456bc60e76c111e,
+            0x679735c929f6a1000000000000000000,
+        );
+        f(
+            0x25,
+            0x25,
+            0x1ae78c038561352ae,
+            0x951ee7b7b012ea77beec149af4096455,
+        );
+        f(
+            0x26,
+            0x26,
+            0xab67135780fb07de43,
+            0xcb7a528e8aa6a1c35acf5e4000000000,
+        );
+        f(
+            0x27,
+            0x27,
+            0x4611711e18402fcba1e0,
+            0xf25f47e1499550e185ef95055e658cd7,
+        );
+        f(
+            0x28,
+            0x28,
+            0x1d6329f1c35ca4bfabb9f5,
+            0x61000000000000000000000000000000,
+        );
+        f(
+            0x29,
+            0x29,
+            0xca32f2ece8b14b98f6f9690,
+            0x356201fde2f9d27da8c738877dc89369,
+        );
+        f(
+            0x2A,
+            0x2A,
+            0x5919417cd6a11dbdf2f413657,
+            0xbbc03bc842ac76ef3932640000000000,
+        );
+        f(
+            0x2B,
+            0x2B,
+            0x28350f997e1099d39257c99472a,
+            0x5022492baddad88dc77fef641843f433,
+        );
+        f(
+            0x2C,
+            0x2C,
+            0x129236dc5d989e02fc561a2730656,
+            0x80110274110000000000000000000000,
+        );
+        f(
+            0x2D,
+            0x2D,
+            0x8c6627f525d504a78b19877bbf5063,
+            0x9983d78ee5d721142426d07d99cae81d,
+        );
+        f(
+            0x2E,
+            0x2E,
+            0x43d475ec0a902527f4a010f3dde187d9,
+            0xf3088a5b0d719423071c400000000000,
+        );
         // f(0x2F, 0x2F, 0x7d8b59f36c57a090ac82149b90821a83, 0xecd5c22a0b6f544e1d493f2c647fd7cf);
         // f(0x89AB_CDEF, 0x0123_4567, 0x8635841270a585219fb4300537524776, 0x349160fdb7214cd245a5e3e0d9e7168f);
     }
