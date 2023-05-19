@@ -1,4 +1,3 @@
-use bitvec::prelude::*;
 use bs58;
 use core::{
     cmp::{Eq, PartialEq},
@@ -92,55 +91,67 @@ impl Scalar {
         bytes
     }
 
+    fn log2(bytes: &[u8; 32]) -> u32 {
+        for i in 0..32 {
+            let v = bytes[i as usize];
+            if v != 0 {
+                return 256 - i * 8 - v.leading_zeros();
+            }
+        }
+        0
+    }
+
+    #[inline]
+    fn bit(bytes: &[u8; 32], i: u32) -> bool {
+        bytes[31 - i as usize / 8] >> i % 8 & 1 != 0
+    }
+
     /// Fast exponentiation using the square and multiply algorithm
-    pub fn square_and_multiply(x: &Scalar, n: &Scalar) -> Scalar {
-        let mut ret = Scalar::one();
-        let mut square = *x;
+    pub fn square_and_multiply(mut self, n: &Scalar) -> Scalar {
+        // Assumption: A Scalar multiplication is an expensive operation,
+        // so we are trying to minimize the number of multiplications.
+
+        if self.is_one() || self.is_zero() {
+            return self;
+        }
+
         let bytes = n.to_bytes();
+        let log2 = Scalar::log2(&bytes);
 
-        for i in 0..bytes.len() {
-            let bits = bytes[31 - i].view_bits::<Lsb0>();
-            for bit in bits {
-                if *bit {
-                    ret *= square;
-                }
-                square *= square;
+        let mut ret = Scalar::one();
+        let mut i = 0;
+        loop {
+            if Scalar::bit(&bytes, i) {
+                ret *= self;
             }
+            if i == log2 {
+                return ret;
+            }
+            i += 1;
+            self *= self;
         }
-
-        ret
     }
 
     /// Fast exponentiation using the square and multiply algorithm
-    pub fn square_and_multiply_usize(x: &Scalar, mut n: usize) -> Scalar {
-        let mut ret = Scalar::one();
-        let mut square = *x;
+    pub fn square_and_multiply_u64(mut self, mut n: u64) -> Scalar {
+        // Assumption: A Scalar multiplication is an expensive operation,
+        // so we are trying to minimize the number of multiplications.
 
-        while n != 0 {
-            if n & 1 != 0 {
-                ret *= square;
-            }
-            square *= square;
-            n >>= 1;
+        if self.is_one() || self.is_zero() {
+            return self;
         }
 
-        ret
-    }
-
-    /// Fast exponentiation using the square and multiply algorithm
-    pub fn square_and_multiply_u32(x: &Scalar, mut n: u32) -> Scalar {
         let mut ret = Scalar::one();
-        let mut square = *x;
-
-        while n != 0 {
+        loop {
             if n & 1 != 0 {
-                ret *= square;
+                ret *= self;
             }
-            square *= square;
             n >>= 1;
+            if n == 0 {
+                return ret;
+            }
+            self *= self;
         }
-
-        ret
     }
 }
 
@@ -543,7 +554,7 @@ impl BitXor<usize> for Scalar {
     type Output = Scalar;
 
     fn bitxor(self, rhs: usize) -> Self::Output {
-        Scalar::square_and_multiply_usize(&self, rhs)
+        self.square_and_multiply_u64(rhs as u64)
     }
 }
 
@@ -551,7 +562,7 @@ impl BitXor<usize> for &Scalar {
     type Output = Scalar;
 
     fn bitxor(self, rhs: usize) -> Self::Output {
-        Scalar::square_and_multiply_usize(self, rhs)
+        self.square_and_multiply_u64(rhs as u64)
     }
 }
 
@@ -559,7 +570,7 @@ impl BitXor<u32> for Scalar {
     type Output = Scalar;
 
     fn bitxor(self, rhs: u32) -> Self::Output {
-        Scalar::square_and_multiply_u32(&self, rhs)
+        self.square_and_multiply_u64(rhs as u64)
     }
 }
 
@@ -567,7 +578,7 @@ impl BitXor<u32> for &Scalar {
     type Output = Scalar;
 
     fn bitxor(self, rhs: u32) -> Self::Output {
-        Scalar::square_and_multiply_u32(self, rhs)
+        self.square_and_multiply_u64(rhs as u64)
     }
 }
 
@@ -575,7 +586,7 @@ impl BitXor<Scalar> for Scalar {
     type Output = Scalar;
 
     fn bitxor(self, rhs: Scalar) -> Self::Output {
-        Scalar::square_and_multiply(&self, &rhs)
+        self.square_and_multiply(&rhs)
     }
 }
 
@@ -583,7 +594,7 @@ impl BitXor<Scalar> for &Scalar {
     type Output = Scalar;
 
     fn bitxor(self, rhs: Scalar) -> Self::Output {
-        Scalar::square_and_multiply(self, &rhs)
+        self.square_and_multiply(&rhs)
     }
 }
 
@@ -591,7 +602,7 @@ impl BitXor<&Scalar> for Scalar {
     type Output = Scalar;
 
     fn bitxor(self, rhs: &Scalar) -> Self::Output {
-        Scalar::square_and_multiply(&self, rhs)
+        self.square_and_multiply(rhs)
     }
 }
 
@@ -599,7 +610,7 @@ impl BitXor<&Scalar> for &Scalar {
     type Output = Scalar;
 
     fn bitxor(self, rhs: &Scalar) -> Self::Output {
-        Scalar::square_and_multiply(self, rhs)
+        self.square_and_multiply(rhs)
     }
 }
 
