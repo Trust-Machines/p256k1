@@ -23,6 +23,11 @@ pub enum Error {
     /// Error converting a scalar
     Conversion(ConversionError),
 }
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
 
 impl From<TryFromSliceError> for Error {
     fn from(e: TryFromSliceError) -> Self {

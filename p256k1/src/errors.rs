@@ -21,7 +21,7 @@ pub enum ConversionError {
     BadFieldElement,
     /// Error decompressing a point into a group element
     BadGroupElement,
-    /// Error converting a byte slice into Compressed
+    /// Error with data size
     WrongNumberOfBytes(usize),
     /// Error converting a base58 string to bytes
     Base58(Base58Error),
