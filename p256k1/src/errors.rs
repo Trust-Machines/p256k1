@@ -15,7 +15,7 @@ pub enum Base58Error {
 }
 
 #[derive(Debug, Clone)]
-/// Errors when converting points
+/// Errors when performing conversion operations
 pub enum ConversionError {
     /// Error decompressing a point into a field element
     BadFieldElement,
@@ -23,6 +23,6 @@ pub enum ConversionError {
     BadGroupElement,
     /// Error with data size
     WrongNumberOfBytes(usize),
-    /// Error converting a base58 string to bytes
+    /// Error converting a base58-related value
     Base58(Base58Error),
 }
