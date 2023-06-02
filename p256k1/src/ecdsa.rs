@@ -1,4 +1,5 @@
 use bs58;
+use core::fmt::{Debug, Display, Formatter, Result as FmtResult};
 use std::array::TryFromSliceError;
 
 use crate::_rename::{
@@ -77,6 +78,20 @@ impl PublicKey {
         }
 
         bytes
+    }
+}
+
+impl Debug for PublicKey {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.debug_struct("PublicKey")
+            .field("data", &self.key.data)
+            .finish()
+    }
+}
+
+impl Display for PublicKey {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        write!(f, "{}", bs58::encode(self.to_bytes()).into_string())
     }
 }
 
@@ -216,6 +231,7 @@ mod tests {
     use super::*;
     use rand_core::{OsRng, RngCore};
     use sha2::{Digest, Sha256};
+    use std::thread;
 
     #[test]
     fn signature_generation() {
@@ -234,6 +250,38 @@ mod tests {
 
         // Verify the generated signature is valid using the msg_hash and corresponding public key
         assert!(sig.verify(&msg_hash, &pub_key));
+    }
+
+    #[test]
+    fn signature_generation_threaded() {
+        // Generate a secret and public key
+        let mut rnd = OsRng::default();
+        let sec_key = Scalar::random(&mut rnd);
+        let pub_key = PublicKey::new(&sec_key).unwrap();
+
+        // Instead of signing a message directly, must sign a 32-byte hash of it.
+        let msg = b"Hello, world!";
+        let mut hasher = Sha256::new();
+        hasher.update(msg);
+        let msg_hash = hasher.finalize();
+
+        let mut handles = Vec::new();
+        for _ in 0..64 {
+            let sec_key = sec_key.clone();
+            let pub_key = pub_key.clone();
+            let msg_hash = msg_hash.clone();
+            handles.push(thread::spawn(move || {
+                // Generate a ECDSA signature
+                let sig = Signature::new(&msg_hash, &sec_key).unwrap();
+
+                // Verify the generated signature is valid using the msg_hash and corresponding public key
+                assert!(sig.verify(&msg_hash, &pub_key));
+            }));
+        }
+
+        for handle in handles {
+            handle.join().unwrap();
+        }
     }
 
     #[test]
