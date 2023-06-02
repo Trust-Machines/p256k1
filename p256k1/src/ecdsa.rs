@@ -84,7 +84,7 @@ impl PublicKey {
 impl Debug for PublicKey {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         f.debug_struct("PublicKey")
-            .field("data", &self.key.data)
+            .field("data", &bs58::encode(self.key.data).into_string())
             .finish()
     }
 }
