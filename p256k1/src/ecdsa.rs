@@ -1,4 +1,5 @@
 use bs58;
+use core::fmt::{Debug, Display, Formatter, Result as FmtResult};
 use std::array::TryFromSliceError;
 
 use crate::_rename::{
@@ -77,6 +78,20 @@ impl PublicKey {
         }
 
         bytes
+    }
+}
+
+impl Debug for PublicKey {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.debug_struct("PublicKey")
+            .field("data", &self.key.data)
+            .finish()
+    }
+}
+
+impl Display for PublicKey {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        write!(f, "{}", bs58::encode(self.to_bytes()).into_string())
     }
 }
 
