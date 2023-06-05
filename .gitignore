@@ -2,3 +2,4 @@ target/
 *~
 src/bindings.rs
 Cargo.lock
+tarpaulin-report.html
