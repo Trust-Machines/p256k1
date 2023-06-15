@@ -635,6 +635,7 @@ impl TryFrom<&str> for Compressed {
 mod tests {
     use super::*;
     use rand_core::OsRng;
+    use std::thread;
 
     #[test]
     fn from() {
@@ -730,6 +731,38 @@ mod tests {
         }
 
         assert_eq!(mmp, ecp);
+    }
+
+    #[test]
+    fn multimult_threaded() {
+        let mut rng = OsRng::default();
+        let n = 1024usize;
+
+        let scalars: Vec<Scalar> = (0..n).map(|_| Scalar::random(&mut rng)).collect();
+        let points: Vec<Point> = (0..n)
+            .map(|_| Point::from(Scalar::random(&mut rng)))
+            .collect();
+
+        let mut handles = Vec::new();
+        for _ in 0..64 {
+            let s = scalars.clone();
+            let p = points.clone();
+            let k = n;
+            handles.push(thread::spawn(move || {
+                let mmp = Point::multimult(s.clone(), p.clone()).unwrap();
+
+                let mut ecp = Point::identity();
+                for i in 0..k {
+                    ecp += s[i] * p[i];
+                }
+
+                assert_eq!(mmp, ecp);
+            }));
+        }
+
+        for handle in handles {
+            handle.join().unwrap();
+        }
     }
 
     #[test]
