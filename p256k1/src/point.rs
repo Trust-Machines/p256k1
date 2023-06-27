@@ -191,7 +191,8 @@ impl Point {
         let multi_callback: secp256k1_ecmult_multi_callback = Some(ecmult_multi_callback);
 
         unsafe {
-            let scratch = secp256k1_scratch_space_create(ctx.context, 1048576);
+            // empirically, number of elements * 512 is an ideal scratch space size
+            let scratch = secp256k1_scratch_space_create(ctx.context, n * 512);
             let i = secp256k1_ecmult_multi_var(
                 &multi_error_callback,
                 scratch,
