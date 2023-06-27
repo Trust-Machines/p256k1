@@ -29,7 +29,11 @@ use crate::_rename::{
     secp256k1_scratch_space_destroy,
 };
 
-use crate::{context::{Context, Scratch}, field, scalar::Scalar};
+use crate::{
+    context::{Context, Scratch},
+    field,
+    scalar::Scalar,
+};
 
 /// The secp256k1 base point
 pub const G: Point = Point {
@@ -211,7 +215,11 @@ impl Point {
     }
 
     /// Perform a multi-exponentiation operation on the passed scalars and points, using the Pipperger algorithm
-    pub fn multimult_scratch_size(scalars: Vec<Scalar>, points: Vec<Point>, scratch_size: usize) -> Result<Point, Error> {
+    pub fn multimult_scratch_size(
+        scalars: Vec<Scalar>,
+        points: Vec<Point>,
+        scratch_size: usize,
+    ) -> Result<Point, Error> {
         let mut r = Point::new();
         let n = scalars.len();
         let mut sp = ScalarsPoints {
@@ -252,7 +260,11 @@ impl Point {
     }
 
     /// Perform a multi-exponentiation operation on the passed scalars and points, using the Pipperger algorithm
-    pub fn multimult_scratch(scalars: Vec<Scalar>, points: Vec<Point>, scratch: &Scratch) -> Result<Point, Error> {
+    pub fn multimult_scratch(
+        scalars: Vec<Scalar>,
+        points: Vec<Point>,
+        scratch: &Scratch,
+    ) -> Result<Point, Error> {
         let mut r = Point::new();
         let n = scalars.len();
         let mut sp = ScalarsPoints {

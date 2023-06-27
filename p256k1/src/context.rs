@@ -1,6 +1,9 @@
 use crate::bindings::{secp256k1_context, secp256k1_scratch_space, SECP256K1_CONTEXT_SIGN};
 
-use super::_rename::{secp256k1_context_create, secp256k1_context_destroy, secp256k1_scratch_space_create, secp256k1_scratch_space_destroy};
+use super::_rename::{
+    secp256k1_context_create, secp256k1_context_destroy, secp256k1_scratch_space_create,
+    secp256k1_scratch_space_destroy,
+};
 
 /**
 Context is a wrapper around libsecp256k1's internal secp256k1_context struct.
@@ -53,7 +56,9 @@ impl Default for Scratch {
     fn default() -> Self {
         let context: Context = Default::default();
         Self {
-            scratch: unsafe { secp256k1_scratch_space_create(context.context, SCRATCH_SPACE_DEFAULT_SIZE) },
+            scratch: unsafe {
+                secp256k1_scratch_space_create(context.context, SCRATCH_SPACE_DEFAULT_SIZE)
+            },
             context,
         }
     }
