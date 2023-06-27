@@ -29,7 +29,7 @@ use crate::_rename::{
     secp256k1_scratch_space_destroy,
 };
 
-use crate::{context::Context, field, scalar::Scalar};
+use crate::{context::{Context, Scratch}, field, scalar::Scalar};
 
 /// The secp256k1 base point
 pub const G: Point = Point {
@@ -191,7 +191,7 @@ impl Point {
         let multi_callback: secp256k1_ecmult_multi_callback = Some(ecmult_multi_callback);
 
         unsafe {
-            let scratch = secp256k1_scratch_space_create(ctx.context, 1048576);
+            let scratch = secp256k1_scratch_space_create(ctx.context, n * 512);
             let i = secp256k1_ecmult_multi_var(
                 &multi_error_callback,
                 scratch,
@@ -202,6 +202,85 @@ impl Point {
                 n,
             );
             secp256k1_scratch_space_destroy(ctx.context, scratch);
+            if i == 0 {
+                return Err(Error::MultiMultFailed);
+            }
+        }
+
+        Ok(r)
+    }
+
+    /// Perform a multi-exponentiation operation on the passed scalars and points, using the Pipperger algorithm
+    pub fn multimult_scratch_size(scalars: Vec<Scalar>, points: Vec<Point>, scratch_size: usize) -> Result<Point, Error> {
+        let mut r = Point::new();
+        let n = scalars.len();
+        let mut sp = ScalarsPoints {
+            s: scalars,
+            p: points,
+        };
+        let sp_ptr: *mut c_void = &mut sp as *mut _ as *mut c_void;
+        let error_callback_data = [0u8; 32];
+        let error_callback_data_ptr: *const c_void =
+            &error_callback_data as *const _ as *const c_void;
+        let multi_error_callback = secp256k1_callback {
+            fn_: Some(error_callback),
+            data: error_callback_data_ptr,
+        };
+
+        let zero = Scalar::zero();
+        let ctx = Context::default();
+        let multi_callback: secp256k1_ecmult_multi_callback = Some(ecmult_multi_callback);
+
+        unsafe {
+            let scratch = secp256k1_scratch_space_create(ctx.context, scratch_size);
+            let i = secp256k1_ecmult_multi_var(
+                &multi_error_callback,
+                scratch,
+                &mut r.gej,
+                &zero.scalar,
+                multi_callback,
+                sp_ptr,
+                n,
+            );
+            secp256k1_scratch_space_destroy(ctx.context, scratch);
+            if i == 0 {
+                return Err(Error::MultiMultFailed);
+            }
+        }
+
+        Ok(r)
+    }
+
+    /// Perform a multi-exponentiation operation on the passed scalars and points, using the Pipperger algorithm
+    pub fn multimult_scratch(scalars: Vec<Scalar>, points: Vec<Point>, scratch: &Scratch) -> Result<Point, Error> {
+        let mut r = Point::new();
+        let n = scalars.len();
+        let mut sp = ScalarsPoints {
+            s: scalars,
+            p: points,
+        };
+        let sp_ptr: *mut c_void = &mut sp as *mut _ as *mut c_void;
+        let error_callback_data = [0u8; 32];
+        let error_callback_data_ptr: *const c_void =
+            &error_callback_data as *const _ as *const c_void;
+        let multi_error_callback = secp256k1_callback {
+            fn_: Some(error_callback),
+            data: error_callback_data_ptr,
+        };
+
+        let zero = Scalar::zero();
+        let multi_callback: secp256k1_ecmult_multi_callback = Some(ecmult_multi_callback);
+
+        unsafe {
+            let i = secp256k1_ecmult_multi_var(
+                &multi_error_callback,
+                scratch.scratch,
+                &mut r.gej,
+                &zero.scalar,
+                multi_callback,
+                sp_ptr,
+                n,
+            );
             if i == 0 {
                 return Err(Error::MultiMultFailed);
             }
