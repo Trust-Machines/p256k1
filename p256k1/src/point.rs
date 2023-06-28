@@ -214,10 +214,7 @@ impl Point {
 
         unsafe {
             // empirically, number of elements * 512 is an ideal scratch space size
-            let scratch_size = match mm.get_scratch_size() {
-                Some(n) => n,
-                None => 1024 * 1024,
-            };
+            let scratch_size = mm.get_scratch_size().unwrap_or(1024 * 1024);
             let scratch = secp256k1_scratch_space_create(ctx.context, scratch_size);
             let i = secp256k1_ecmult_multi_var(
                 &multi_error_callback,
