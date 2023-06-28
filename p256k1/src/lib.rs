@@ -32,4 +32,7 @@ pub mod scalar;
 /// Field elements arithmetic
 pub mod field;
 
+/// Traits
+pub mod traits;
+
 mod group;

@@ -18,8 +18,12 @@ use crate::{
         secp256k1_callback, secp256k1_ecmult_multi_callback, secp256k1_fe, secp256k1_ge,
         secp256k1_gej, secp256k1_scalar, SECP256K1_TAG_PUBKEY_EVEN, SECP256K1_TAG_PUBKEY_ODD,
     },
+    context::Context,
     errors::{Base58Error, ConversionError},
+    field,
     group::secp256k1_ge_set_gej,
+    scalar::Scalar,
+    traits::MultiMult,
 };
 
 use crate::_rename::{
@@ -28,8 +32,6 @@ use crate::_rename::{
     secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_gej_set_ge, secp256k1_scratch_space_create,
     secp256k1_scratch_space_destroy,
 };
-
-use crate::{context::Context, field, scalar::Scalar};
 
 /// The secp256k1 base point
 pub const G: Point = Point {
@@ -100,18 +102,33 @@ struct ScalarsPoints {
     p: Vec<Point>,
 }
 
-#[no_mangle]
-extern "C" fn ecmult_multi_callback(
+impl MultiMult for ScalarsPoints {
+    fn get_scalar(&self, i: usize) -> &Scalar {
+        &self.s[i]
+    }
+
+    fn get_point(&self, i: usize) -> &Point {
+        &self.p[i]
+    }
+
+    fn get_size(&self) -> usize {
+        self.s.len()
+    }
+}
+
+// we must mangle this because it's generic, thankfully the compiler doesn't mind passing it
+//#[no_mangle]
+extern "C" fn ecmult_multi_callback<T: MultiMult>(
     sc: *mut secp256k1_scalar,
     pt: *mut secp256k1_ge,
     idx: usize,
     data: *mut ::std::os::raw::c_void,
 ) -> ::std::os::raw::c_int {
     unsafe {
-        let sp: *mut ScalarsPoints = data as *mut ScalarsPoints;
+        let mm: *mut dyn MultiMult = data as *mut T;
 
-        secp256k1_ge_set_gej(&mut *pt, &(*sp).p[idx].gej);
-        *sc = (*sp).s[idx].scalar;
+        secp256k1_ge_set_gej(&mut *pt, &(*mm).get_point(idx).gej);
+        *sc = (*mm).get_scalar(idx).scalar;
     }
 
     1
@@ -171,13 +188,18 @@ impl Point {
 
     /// Perform a multi-exponentiation operation on the passed scalars and points, using the Pipperger algorithm
     pub fn multimult(scalars: Vec<Scalar>, points: Vec<Point>) -> Result<Point, Error> {
-        let mut r = Point::new();
-        let n = scalars.len();
         let mut sp = ScalarsPoints {
             s: scalars,
             p: points,
         };
-        let sp_ptr: *mut c_void = &mut sp as *mut _ as *mut c_void;
+
+        Self::multimult_trait(&mut sp)
+    }
+
+    /// Perform a multi-exponentiation operation on the passed object which implements the MultiMult trait, using the Pipperger algorithm
+    pub fn multimult_trait<T: MultiMult>(mm: &mut T) -> Result<Point, Error> {
+        let mut r = Point::new();
+        let mm_ptr: *mut c_void = mm as *mut _ as *mut c_void;
         let error_callback_data = [0u8; 32];
         let error_callback_data_ptr: *const c_void =
             &error_callback_data as *const _ as *const c_void;
@@ -188,19 +210,23 @@ impl Point {
 
         let zero = Scalar::zero();
         let ctx = Context::default();
-        let multi_callback: secp256k1_ecmult_multi_callback = Some(ecmult_multi_callback);
+        let multi_callback: secp256k1_ecmult_multi_callback = Some(ecmult_multi_callback::<T>);
 
         unsafe {
             // empirically, number of elements * 512 is an ideal scratch space size
-            let scratch = secp256k1_scratch_space_create(ctx.context, n * 512);
+            let scratch_size = match mm.get_scratch_size() {
+                Some(n) => n,
+                None => 1024 * 1024,
+            };
+            let scratch = secp256k1_scratch_space_create(ctx.context, scratch_size);
             let i = secp256k1_ecmult_multi_var(
                 &multi_error_callback,
                 scratch,
                 &mut r.gej,
                 &zero.scalar,
                 multi_callback,
-                sp_ptr,
-                n,
+                mm_ptr,
+                mm.get_size(),
             );
             secp256k1_scratch_space_destroy(ctx.context, scratch);
             if i == 0 {
