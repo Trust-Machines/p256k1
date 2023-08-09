@@ -2,6 +2,7 @@
 #define ECMULT_WINDOW_SIZE 15
 
 #include "_secp256k1/include/secp256k1.h"
+#include "_secp256k1/include/secp256k1_extrakeys.h"
 #include "_secp256k1/src/scalar.h"
 #include "_secp256k1/src/group.h"
 #include "_secp256k1/src/field_impl.h"

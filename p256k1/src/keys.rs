@@ -4,8 +4,10 @@ use std::array::TryFromSliceError;
 
 use crate::_rename::{
     secp256k1_ec_pubkey_create, secp256k1_ec_pubkey_parse, secp256k1_ec_pubkey_serialize,
+    secp256k1_xonly_pubkey_from_pubkey, secp256k1_xonly_pubkey_parse,
+    secp256k1_xonly_pubkey_serialize,
 };
-use crate::bindings::{secp256k1_pubkey, SECP256K1_EC_COMPRESSED};
+use crate::bindings::{secp256k1_pubkey, secp256k1_xonly_pubkey, SECP256K1_EC_COMPRESSED};
 use crate::context::Context;
 use crate::errors::{Base58Error, ConversionError};
 use crate::scalar::Scalar;
@@ -17,6 +19,8 @@ pub enum Error {
     InvalidSecretKey,
     /// Error occurred due to invalid public key
     InvalidPublicKey,
+    /// Error occurred due to invalid xonly public key
+    InvalidXOnlyPublicKey,
     /// Error occurred during a try from operation
     TryFrom(String),
     /// Error converting a scalar
@@ -123,6 +127,109 @@ impl TryFrom<&[u8]> for PublicKey {
             ) {
                 1 => Ok(pubkey),
                 _ => Err(Error::InvalidPublicKey),
+            }
+        }
+    }
+}
+
+/**
+XOnlyPublicKey is a wrapper around libsecp256k1's secp256k1_pubkey struct.
+*/
+#[derive(Clone, Copy)]
+pub struct XOnlyPublicKey {
+    /// The wrapped secp256k1_pubkey public key
+    pub key: secp256k1_xonly_pubkey,
+    /// The parity bit of this key
+    pub parity: i32,
+}
+
+impl XOnlyPublicKey {
+    /// Construct a public key from a given secret key
+    pub fn new(sec_key: &Scalar) -> Result<Self, Error> {
+        let mut pub_key = PublicKey {
+            key: secp256k1_pubkey { data: [0; 64] },
+        };
+        let mut xonly_pub_key = Self {
+            key: secp256k1_xonly_pubkey { data: [0; 64] },
+            parity: 0,
+        };
+        let ctx = Context::default();
+        if unsafe {
+            secp256k1_ec_pubkey_create(ctx.context, &mut pub_key.key, sec_key.to_bytes().as_ptr())
+        } == 0
+        {
+            return Err(Error::InvalidSecretKey);
+        }
+        if unsafe {
+            secp256k1_xonly_pubkey_from_pubkey(
+                ctx.context,
+                &mut xonly_pub_key.key,
+                &mut xonly_pub_key.parity,
+                &pub_key.key,
+            )
+        } == 0
+        {
+            return Err(Error::InvalidSecretKey);
+        }
+        Ok(xonly_pub_key)
+    }
+
+    /// Serialize the key to a compressed byte array
+    pub fn to_bytes(&self) -> [u8; 32] {
+        let ctx = Context::default();
+        let mut bytes = [0u8; 32];
+
+        unsafe {
+            secp256k1_xonly_pubkey_serialize(ctx.context, bytes.as_mut_ptr(), &self.key);
+        }
+
+        bytes
+    }
+}
+
+impl Debug for XOnlyPublicKey {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.debug_struct("XOnlyPublicKey")
+            .field("data", &bs58::encode(self.key.data).into_string())
+            .finish()
+    }
+}
+
+impl Display for XOnlyPublicKey {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        write!(f, "{}", bs58::encode(self.to_bytes()).into_string())
+    }
+}
+
+impl TryFrom<&str> for XOnlyPublicKey {
+    type Error = Error;
+    /// Create a pubkey from the passed byte slice
+    fn try_from(s: &str) -> Result<Self, self::Error> {
+        match bs58::decode(s).into_vec() {
+            Ok(bytes) => XOnlyPublicKey::try_from(&bytes[..]),
+            Err(e) => Err(Error::Conversion(ConversionError::Base58(
+                Base58Error::Decode(e),
+            ))),
+        }
+    }
+}
+
+impl TryFrom<&[u8]> for XOnlyPublicKey {
+    type Error = Error;
+    /// Create a pubkey from the passed byte slice
+    fn try_from(input: &[u8]) -> Result<Self, Self::Error> {
+        if input.len() != 32 {
+            return Err(Error::InvalidXOnlyPublicKey);
+        }
+        let mut pubkey = Self {
+            key: secp256k1_xonly_pubkey { data: [0; 64] },
+            parity: 0,
+        };
+        let ctx = Context::default();
+        unsafe {
+            match secp256k1_xonly_pubkey_parse(ctx.context, &mut pubkey.key, input.as_ptr()) {
+                1 => Ok(pubkey),
+                _ => Err(Error::InvalidXOnlyPublicKey),
             }
         }
     }
