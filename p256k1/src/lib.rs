@@ -23,6 +23,9 @@ pub mod ecdsa;
 /// Errors
 pub mod errors;
 
+/// Key operations on the secp256k1 curve
+pub mod keys;
+
 /// Point operations on the secp256k1 curve
 pub mod point;
 
