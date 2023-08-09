@@ -131,14 +131,12 @@ impl TryFrom<&[u8]> for PublicKey {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand_core::{OsRng, RngCore};
-    use sha2::{Digest, Sha256};
-    use std::thread;
+    use rand_core::OsRng;
 
     #[test]
     fn pubkey_serde() {
         // Generate a secret and public key
-        let mut rnd = OsRng::default();
+        let mut rnd = OsRng;
         let sec_key = Scalar::random(&mut rnd);
         let pub_key = PublicKey::new(&sec_key).unwrap();
 
