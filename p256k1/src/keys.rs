@@ -146,32 +146,8 @@ pub struct XOnlyPublicKey {
 impl XOnlyPublicKey {
     /// Construct a public key from a given secret key
     pub fn new(sec_key: &Scalar) -> Result<Self, Error> {
-        let mut pub_key = PublicKey {
-            key: secp256k1_pubkey { data: [0; 64] },
-        };
-        let mut xonly_pub_key = Self {
-            key: secp256k1_xonly_pubkey { data: [0; 64] },
-            parity: 0,
-        };
-        let ctx = Context::default();
-        if unsafe {
-            secp256k1_ec_pubkey_create(ctx.context, &mut pub_key.key, sec_key.to_bytes().as_ptr())
-        } == 0
-        {
-            return Err(Error::InvalidSecretKey);
-        }
-        if unsafe {
-            secp256k1_xonly_pubkey_from_pubkey(
-                ctx.context,
-                &mut xonly_pub_key.key,
-                &mut xonly_pub_key.parity,
-                &pub_key.key,
-            )
-        } == 0
-        {
-            return Err(Error::InvalidSecretKey);
-        }
-        Ok(xonly_pub_key)
+        let public_key = PublicKey::new(sec_key)?;
+        Self::try_from(&public_key)
     }
 
     /// Serialize the key to a compressed byte array
@@ -235,21 +211,80 @@ impl TryFrom<&[u8]> for XOnlyPublicKey {
     }
 }
 
+impl TryFrom<&PublicKey> for XOnlyPublicKey {
+    type Error = Error;
+    /// Create XOnlyPublicKey from the passed PublicKey
+    fn try_from(input: &PublicKey) -> Result<Self, Self::Error> {
+        let mut output = Self {
+            key: secp256k1_xonly_pubkey { data: [0; 64] },
+            parity: 0,
+        };
+        let ctx = Context::default();
+        if unsafe {
+            secp256k1_xonly_pubkey_from_pubkey(
+                ctx.context,
+                &mut output.key,
+                &mut output.parity,
+                &input.key,
+            )
+        } == 0
+        {
+            return Err(Error::InvalidSecretKey);
+        }
+        Ok(output)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::point::Point;
     use rand_core::OsRng;
 
     #[test]
     fn pubkey_serde() {
         // Generate a secret and public key
         let mut rnd = OsRng;
-        let sec_key = Scalar::random(&mut rnd);
-        let pub_key = PublicKey::new(&sec_key).unwrap();
+        let seckey = Scalar::random(&mut rnd);
+        let pubkey = PublicKey::new(&seckey).unwrap();
 
         //Serialize with try_from and deseriailze with to_bytes
-        let pub_key_2 = PublicKey::try_from(pub_key.to_bytes().as_slice()).unwrap();
-        assert_eq!(pub_key_2.to_bytes(), pub_key.to_bytes());
-        assert_eq!(pub_key_2.key.data, pub_key.key.data);
+        let pubkey2 = PublicKey::try_from(pubkey.to_bytes().as_slice()).unwrap();
+        assert_eq!(pubkey2.to_bytes(), pubkey.to_bytes());
+
+        //Serialize again with str
+        let pubkey3 = PublicKey::try_from(format!("{}", &pubkey).as_str()).unwrap();
+        assert_eq!(pubkey3.to_bytes(), pubkey.to_bytes());
+        assert_eq!(pubkey3.to_bytes(), pubkey2.to_bytes());
+    }
+
+    #[test]
+    fn xonlykey_serde() {
+        // Generate a secret and public key
+        let mut rnd = OsRng;
+        let seckey = Scalar::random(&mut rnd);
+        let xopubkey = XOnlyPublicKey::new(&seckey).unwrap();
+
+        //Serialize with try_from and deseriailze with to_bytes
+        let xopubkey2 = XOnlyPublicKey::try_from(xopubkey.to_bytes().as_slice()).unwrap();
+        assert_eq!(xopubkey2.to_bytes(), xopubkey.to_bytes());
+
+        //Serialize again with str
+        let xopubkey3 = XOnlyPublicKey::try_from(format!("{}", &xopubkey).as_str()).unwrap();
+        assert_eq!(xopubkey3.to_bytes(), xopubkey.to_bytes());
+        assert_eq!(xopubkey3.to_bytes(), xopubkey2.to_bytes());
+    }
+
+    #[test]
+    fn xonlykey_point() {
+        // Generate a secret and public key
+        let mut rnd = OsRng;
+        let scalar = Scalar::random(&mut rnd);
+        let point = Point::from(&scalar);
+        let xopubkey = XOnlyPublicKey::try_from(&point.x().to_bytes()[..]).unwrap();
+        let xopubkey2 = XOnlyPublicKey::new(&scalar).unwrap();
+
+        assert_eq!(xopubkey.to_bytes(), point.x().to_bytes());
+        assert_eq!(xopubkey2.to_bytes(), point.x().to_bytes());
     }
 }
