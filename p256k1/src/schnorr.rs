@@ -104,20 +104,19 @@ impl From<[u8; 64]> for Signature {
         Self { data }
     }
 }
-/*
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand_core::{OsRng, RngCore};
+    use rand_core::OsRng;
     use sha2::{Digest, Sha256};
-    use std::thread;
 
     #[test]
-    fn signature_generation() {
+    fn signature() {
         // Generate a secret and public key
         let mut rnd = OsRng::default();
         let sec_key = Scalar::random(&mut rnd);
-        let pub_key = PublicKey::new(&sec_key).unwrap();
+        let pub_key = XOnlyPublicKey::new(&sec_key).unwrap();
 
         // Instead of signing a message directly, must sign a 32-byte hash of it.
         let msg = b"Hello, world!";
@@ -129,78 +128,13 @@ mod tests {
 
         // Verify the generated signature is valid using the msg_hash and corresponding public key
         assert!(sig.verify(&msg_hash, &pub_key));
-    }
 
-    #[test]
-    fn signature_generation_threaded() {
-        // Generate a secret and public key
-        let mut rnd = OsRng::default();
-        let sec_key = Scalar::random(&mut rnd);
-        let pub_key = PublicKey::new(&sec_key).unwrap();
+        let bytes = sig.to_bytes();
 
-        // Instead of signing a message directly, must sign a 32-byte hash of it.
-        let msg = b"Hello, world!";
-        let mut hasher = Sha256::new();
-        hasher.update(msg);
-        let msg_hash = hasher.finalize();
+        let sig2 = Signature::try_from(&bytes[..]).unwrap();
+        assert!(sig2.verify(&msg_hash, &pub_key));
 
-        let mut handles = Vec::new();
-        for _ in 0..64 {
-            let sec_key = sec_key.clone();
-            let pub_key = pub_key.clone();
-            let msg_hash = msg_hash.clone();
-            handles.push(thread::spawn(move || {
-                // Generate a Schnorr signature
-                let sig = Signature::new(&msg_hash, &sec_key).unwrap();
-
-                // Verify the generated signature is valid using the msg_hash and corresponding public key
-                assert!(sig.verify(&msg_hash, &pub_key));
-            }));
-        }
-
-        for handle in handles {
-            handle.join().unwrap();
-        }
-    }
-
-    #[test]
-    fn signature_from() {
-        // Create random data bytes to serialize
-        let mut rng = OsRng::default();
-        let mut bytes = [0u8; 64];
-        rng.fill_bytes(&mut bytes);
-
-        let sig_from_struct = Signature {
-            signature: secp256k1_schnorr_signature { data: bytes },
-            context: Context::default(),
-        };
-        let sig_from_slice = Signature::try_from(bytes.as_slice()).unwrap();
-        let sig_from_array = Signature::try_from(bytes).unwrap();
-
-        assert_ne!(sig_from_struct.to_bytes(), sig_from_slice.to_bytes());
-        assert_ne!(sig_from_struct.to_bytes(), sig_from_array.to_bytes());
-        assert_eq!(sig_from_array.to_bytes(), sig_from_slice.to_bytes());
-
-        let mut too_small = [0u8; 63];
-        rng.fill_bytes(&mut too_small);
-        assert!(Signature::try_from(too_small.as_slice()).is_err());
-
-        let mut too_big = [0u8; 65];
-        rng.fill_bytes(&mut too_big);
-        assert!(Signature::try_from(too_big.as_slice()).is_err());
-    }
-
-    #[test]
-    fn signature_serde() {
-        // Generate random data bytes
-        let mut rng = OsRng::default();
-        let mut bytes = [0u8; 64];
-        rng.fill_bytes(&mut bytes);
-
-        //Serialize with try_from and deserialize with to_bytes
-        let sig = Signature::try_from(bytes).unwrap();
-        assert_ne!(sig.signature.data, bytes);
-        assert_eq!(sig.to_bytes(), bytes);
+        let sig3 = Signature::from(bytes);
+        assert!(sig3.verify(&msg_hash, &pub_key));
     }
 }
-*/
