@@ -4,10 +4,13 @@ use std::array::TryFromSliceError;
 
 use crate::_rename::{
     secp256k1_ec_pubkey_create, secp256k1_ec_pubkey_parse, secp256k1_ec_pubkey_serialize,
-    secp256k1_xonly_pubkey_from_pubkey, secp256k1_xonly_pubkey_parse,
+    secp256k1_keypair_create, secp256k1_keypair_pub, secp256k1_keypair_sec,
+    secp256k1_keypair_xonly_pub, secp256k1_xonly_pubkey_from_pubkey, secp256k1_xonly_pubkey_parse,
     secp256k1_xonly_pubkey_serialize,
 };
-use crate::bindings::{secp256k1_pubkey, secp256k1_xonly_pubkey, SECP256K1_EC_COMPRESSED};
+use crate::bindings::{
+    secp256k1_keypair, secp256k1_pubkey, secp256k1_xonly_pubkey, SECP256K1_EC_COMPRESSED,
+};
 use crate::context::Context;
 use crate::errors::{Base58Error, ConversionError};
 use crate::scalar::Scalar;
@@ -235,6 +238,83 @@ impl TryFrom<&PublicKey> for XOnlyPublicKey {
     }
 }
 
+/**
+KeyPair is a wrapper around libsecp256k1's secp256k1_pubkey struct.
+*/
+#[derive(Clone, Copy)]
+pub struct KeyPair {
+    /// The wrapped secp256k1_keypair
+    pub key: secp256k1_keypair,
+}
+
+impl KeyPair {
+    /// Construct a keypair from a given secret key
+    pub fn new(sec_key: &Scalar) -> Result<Self, Error> {
+        let mut pub_key = Self {
+            key: secp256k1_keypair { data: [0; 96] },
+        };
+        let ctx = Context::default();
+        if unsafe {
+            secp256k1_keypair_create(ctx.context, &mut pub_key.key, sec_key.to_bytes().as_ptr())
+        } == 0
+        {
+            return Err(Error::InvalidSecretKey);
+        }
+        Ok(pub_key)
+    }
+}
+
+impl Debug for KeyPair {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.debug_struct("KeyPair")
+            .field("data", &bs58::encode(self.key.data).into_string())
+            .finish()
+    }
+}
+
+impl From<&KeyPair> for Scalar {
+    fn from(kp: &KeyPair) -> Scalar {
+        let mut bytes = [0u8; 32];
+        let ctx = Context::default();
+
+        unsafe {
+            let _ = secp256k1_keypair_sec(ctx.context, bytes.as_mut_ptr(), &kp.key);
+        }
+
+        Scalar::from(bytes)
+    }
+}
+
+impl From<&KeyPair> for PublicKey {
+    fn from(kp: &KeyPair) -> PublicKey {
+        let mut key = secp256k1_pubkey { data: [0; 64] };
+        let ctx = Context::default();
+
+        unsafe {
+            let _ = secp256k1_keypair_pub(ctx.context, &mut key, &kp.key);
+        }
+
+        PublicKey { key }
+    }
+}
+
+impl From<&KeyPair> for XOnlyPublicKey {
+    fn from(kp: &KeyPair) -> XOnlyPublicKey {
+        let mut key = XOnlyPublicKey {
+            key: secp256k1_xonly_pubkey { data: [0; 64] },
+            parity: 0,
+        };
+        let ctx = Context::default();
+
+        unsafe {
+            let _ =
+                secp256k1_keypair_xonly_pub(ctx.context, &mut key.key, &mut key.parity, &kp.key);
+        }
+
+        key
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -286,5 +366,28 @@ mod tests {
 
         assert_eq!(xopubkey.to_bytes(), point.x().to_bytes());
         assert_eq!(xopubkey2.to_bytes(), point.x().to_bytes());
+    }
+
+    #[test]
+    fn keypair() {
+        // Generate a secret and public key
+        let mut rnd = OsRng;
+        let scalar = Scalar::random(&mut rnd);
+        let keypair = KeyPair::new(&scalar).unwrap();
+        let point = Point::from(&scalar);
+        let xopubkey = XOnlyPublicKey::try_from(&point.x().to_bytes()[..]).unwrap();
+        let xopubkey2 = XOnlyPublicKey::new(&scalar).unwrap();
+        let xopubkey3 = XOnlyPublicKey::from(&keypair);
+        let seckey = Scalar::from(&keypair);
+        let pubkey = PublicKey::from(&keypair);
+        let pubkey2 = PublicKey::new(&scalar).unwrap();
+        let pubkey3 = PublicKey::new(&seckey).unwrap();
+
+        assert_eq!(scalar.to_bytes(), seckey.to_bytes());
+        assert_eq!(xopubkey.to_bytes(), point.x().to_bytes());
+        assert_eq!(xopubkey2.to_bytes(), point.x().to_bytes());
+        assert_eq!(xopubkey3.to_bytes(), point.x().to_bytes());
+        assert_eq!(pubkey.to_bytes(), pubkey2.to_bytes());
+        assert_eq!(pubkey.to_bytes(), pubkey3.to_bytes());
     }
 }
