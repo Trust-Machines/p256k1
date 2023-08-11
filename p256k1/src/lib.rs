@@ -32,6 +32,9 @@ pub mod point;
 /// Scalar arithmetic modulo the group order
 pub mod scalar;
 
+/// Schnorr proofs
+pub mod schnorr;
+
 /// Field elements arithmetic
 pub mod field;
 
