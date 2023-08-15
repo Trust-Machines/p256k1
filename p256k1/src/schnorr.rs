@@ -122,7 +122,7 @@ mod tests {
         let msg = b"Hello, world!";
         let mut hasher = Sha256::new();
         hasher.update(msg);
-        let msg_hash = hasher.finalize();
+        let msg_hash = hasher.clone().finalize();
         // Generate a Schnorr signature
         let sig = Signature::new(&msg_hash, &sec_key).unwrap();
 
@@ -136,5 +136,19 @@ mod tests {
 
         let sig3 = Signature::from(bytes);
         assert!(sig3.verify(&msg_hash, &pub_key));
+
+        // make sure that signing with a bad secret key fails
+        let bad_sec_key = sec_key + Scalar::from(1);
+        let bad_sig = Signature::new(&msg_hash, &bad_sec_key).unwrap();
+        assert!(!bad_sig.verify(&msg_hash, &pub_key));
+
+        // make sure that verifying with a bad public key fails
+        let bad_pub_key = XOnlyPublicKey::new(&bad_sec_key).unwrap();
+        assert!(!sig.verify(&msg_hash, &bad_pub_key));
+
+        // make sure that verifying with a bad msg hash fails
+        hasher.update("foo");
+        let bad_msg_hash = hasher.finalize();
+        assert!(!sig.verify(&bad_msg_hash, &pub_key));
     }
 }
