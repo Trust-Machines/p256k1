@@ -150,7 +150,7 @@ impl XOnlyPublicKey {
     /// Construct a public key from a given secret key
     pub fn new(sec_key: &Scalar) -> Result<Self, Error> {
         let public_key = PublicKey::new(sec_key)?;
-        Self::try_from(&public_key)
+        Ok(Self::from(&public_key))
     }
 
     /// Serialize the key to a compressed byte array
@@ -214,27 +214,23 @@ impl TryFrom<&[u8]> for XOnlyPublicKey {
     }
 }
 
-impl TryFrom<&PublicKey> for XOnlyPublicKey {
-    type Error = Error;
+impl From<&PublicKey> for XOnlyPublicKey {
     /// Create XOnlyPublicKey from the passed PublicKey
-    fn try_from(input: &PublicKey) -> Result<Self, Self::Error> {
+    fn from(input: &PublicKey) -> Self {
         let mut output = Self {
             key: secp256k1_xonly_pubkey { data: [0; 64] },
             parity: 0,
         };
         let ctx = Context::default();
-        if unsafe {
+        unsafe {
             secp256k1_xonly_pubkey_from_pubkey(
                 ctx.context,
                 &mut output.key,
                 &mut output.parity,
                 &input.key,
-            )
-        } == 0
-        {
-            return Err(Error::InvalidSecretKey);
+            );
         }
-        Ok(output)
+        output
     }
 }
 
