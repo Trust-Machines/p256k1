@@ -55,7 +55,7 @@ impl SchnorrProof {
 
 #[allow(non_snake_case)]
 fn main() {
-    let mut rng = OsRng::default();
+    let mut rng = OsRng;
     let x = Scalar::random(&mut rng);
     let proof = SchnorrProof::new(&x, &mut rng);
     println!("SchnorrProof verify {}", proof.verify());

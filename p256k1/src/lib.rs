@@ -23,11 +23,17 @@ pub mod ecdsa;
 /// Errors
 pub mod errors;
 
+/// Key operations on the secp256k1 curve
+pub mod keys;
+
 /// Point operations on the secp256k1 curve
 pub mod point;
 
 /// Scalar arithmetic modulo the group order
 pub mod scalar;
+
+/// Schnorr proofs
+pub mod schnorr;
 
 /// Field elements arithmetic
 pub mod field;
