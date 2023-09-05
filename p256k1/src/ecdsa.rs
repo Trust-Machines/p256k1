@@ -7,8 +7,9 @@ use crate::_rename::{
 use crate::bindings::secp256k1_ecdsa_signature;
 use crate::context::Context;
 use crate::errors::ConversionError;
-use crate::keys::{Error as KeyError, PublicKey};
 use crate::scalar::Scalar;
+
+pub use crate::keys::{Error as KeyError, PublicKey};
 
 #[derive(Debug, Clone)]
 /// Errors in ECDSA signature operations
