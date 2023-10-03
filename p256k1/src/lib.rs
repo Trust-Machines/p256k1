@@ -9,9 +9,14 @@
 #[allow(deref_nullptr)]
 #[allow(improper_ctypes)]
 #[allow(clippy::all)]
+#[cfg(feature = "with_bindgen")]
 mod bindings {
     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 }
+
+#[cfg(not(feature = "with_bindgen"))]
+mod bindings;
+
 mod _rename;
 
 /// secp256k1 context operations
