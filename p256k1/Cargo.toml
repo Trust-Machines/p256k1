@@ -1,6 +1,6 @@
 [package]
 name = "p256k1"
-version = "5.4.1"
+version = "5.5.0"
 edition = "2021"
 authors = ["Joey Yandle <xoloki@gmail.com>"]
 license = "Apache-2.0"
