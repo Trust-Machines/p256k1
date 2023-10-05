@@ -1,6 +1,11 @@
-use itertools::Itertools;
+#[cfg(feature = "with_bindgen")]
+use std::collections::HashSet;
+
+#[cfg(feature = "with_bindgen")]
 use quote::ToTokens;
-use std::{collections::HashSet, env};
+
+#[cfg(feature = "with_bindgen")]
+use itertools::Itertools;
 
 fn main() {
     //
@@ -36,35 +41,42 @@ fn main() {
     println!("cargo:rerun-if-changed=wrapper.h");
     println!("cargo:rustc-link-lib=secp256k1");
 
-    let bindings_file = &format!("{}/bindings.rs", env::var("OUT_DIR").unwrap());
-    save_bindings(bindings_file);
+    #[cfg(feature = "with_bindgen")]
+    {
+        use std::env;
+        let bindings_file = &format!("{}/bindings.rs", env::var("OUT_DIR").unwrap());
+        save_bindings(bindings_file);
 
-    let serializable_types = ["secp256k1_scalar", "secp256k1_fe", "secp256k1_gej"];
+        let serializable_types = ["secp256k1_scalar", "secp256k1_fe", "secp256k1_gej"];
 
-    let add_serde_derive_attributes = |to_type_definitions: &[&str], syntax: syn::File| {
-        let type_identifiers: HashSet<_> = to_type_definitions
-            .iter()
-            .map(|name| proc_macro2::Ident::new(name, proc_macro2::Span::call_site()))
-            .collect();
+        let add_serde_derive_attributes = |to_type_definitions: &[&str], syntax: syn::File| {
+            let type_identifiers: HashSet<_> = to_type_definitions
+                .iter()
+                .map(|name| proc_macro2::Ident::new(name, proc_macro2::Span::call_site()))
+                .collect();
 
-        let token_stream_with_added_derives = add_serde_derive_tokens(&type_identifiers, &syntax);
+            let token_stream_with_added_derives =
+                add_serde_derive_tokens(&type_identifiers, &syntax);
 
-        let formatted_output = rustfmt_wrapper::rustfmt(proc_macro2::TokenStream::from_iter(
-            token_stream_with_added_derives,
-        ))
-        .unwrap();
+            let formatted_output = rustfmt_wrapper::rustfmt(proc_macro2::TokenStream::from_iter(
+                token_stream_with_added_derives,
+            ))
+            .unwrap();
 
-        std::fs::write(bindings_file, formatted_output).unwrap();
-    };
+            std::fs::write(bindings_file, formatted_output).unwrap();
+        };
 
-    add_serde_derive_attributes(&serializable_types, read_syntax(bindings_file));
+        add_serde_derive_attributes(&serializable_types, read_syntax(bindings_file));
+    }
 }
 
+#[cfg(feature = "with_bindgen")]
 fn read_syntax(path: &str) -> syn::File {
     let file_content = std::fs::read_to_string(path).unwrap();
     syn::parse_file(&file_content).unwrap()
 }
 
+#[cfg(feature = "with_bindgen")]
 fn save_bindings(path: &str) {
     // The bindgen::Builder is the main entry point
     // to bindgen, and lets you build up options for
@@ -84,6 +96,7 @@ fn save_bindings(path: &str) {
     bindings.write_to_file(path).unwrap();
 }
 
+#[cfg(feature = "with_bindgen")]
 fn add_serde_derive_tokens<'a>(
     type_identifiers: &'a HashSet<proc_macro2::Ident>,
     syntax: &'a syn::File,
@@ -97,12 +110,14 @@ fn add_serde_derive_tokens<'a>(
         .flat_map(move |token_tuple| expand_tokens_if_matches(type_identifiers, token_tuple))
 }
 
+#[cfg(feature = "with_bindgen")]
 type TokenTuple = (
     proc_macro2::TokenTree,
     proc_macro2::TokenTree,
     proc_macro2::TokenTree,
 );
 
+#[cfg(feature = "with_bindgen")]
 fn expand_tokens_if_matches(
     type_identifiers: &HashSet<proc_macro2::Ident>,
     tokens: TokenTuple,
