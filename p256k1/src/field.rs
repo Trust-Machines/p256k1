@@ -9,6 +9,10 @@ use core::{
 };
 use num_traits::{One, Zero};
 use rand_core::{CryptoRng, RngCore};
+use serde::{
+    de::{self, Visitor},
+    Deserialize, Deserializer, Serialize, Serializer,
+};
 
 use crate::_rename::{
     secp256k1_fe_add, secp256k1_fe_cmp_var, secp256k1_fe_get_b32, secp256k1_fe_inv,
@@ -34,7 +38,7 @@ pub enum Error {
     Conversion(ConversionError),
 }
 
-#[derive(Copy, Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Copy, Clone, Debug)]
 /**
 Element is a wrapper around libsecp256k1's internal secp256k1_fe struct.  It provides a field element, which is like a scalar but not necessarily reduced modulo the group order
  */
@@ -159,6 +163,60 @@ impl PartialEq for Element {
 }
 
 impl Eq for Element {}
+
+impl Serialize for Element {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_bytes(&self.to_bytes())
+    }
+}
+
+struct ElementVisitor;
+
+impl<'de> Visitor<'de> for ElementVisitor {
+    type Value = Element;
+
+    fn expecting(&self, formatter: &mut Formatter) -> FmtResult {
+        formatter.write_str("an array of bytes which represents a point on the secp256k1 curve")
+    }
+
+    fn visit_bytes<E>(self, value: &[u8]) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        match Self::Value::try_from(value) {
+            Ok(s) => Ok(s),
+            Err(e) => Err(E::custom(format!("{:?}", e))),
+        }
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: de::SeqAccess<'de>,
+    {
+        let mut v = Vec::new();
+
+        loop {
+            match seq.next_element() {
+                Ok(Some(x)) => v.push(x),
+                _ => break,
+            }
+        }
+
+        self.visit_bytes(&v)
+    }
+}
+
+impl<'de> Deserialize<'de> for Element {
+    fn deserialize<D>(deserializer: D) -> Result<Element, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_bytes(ElementVisitor)
+    }
+}
 
 impl Hash for Element {
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -607,5 +665,15 @@ mod tests {
         assert_eq!(a, b);
         assert_eq!(a, c);
         assert_eq!(s, t);
+    }
+
+    #[test]
+    fn serde() {
+        let mut rng = OsRng::default();
+        let x = Element::random(&mut rng);
+        let s = serde_json::to_string(&x).expect("failed to serialize");
+        let y = serde_json::from_str(&s).expect("failed to deserialize");
+
+        assert_eq!(x, y);
     }
 }
