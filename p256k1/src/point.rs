@@ -378,11 +378,8 @@ impl<'de> Visitor<'de> for PointVisitor {
     {
         let mut v = Vec::new();
 
-        loop {
-            match seq.next_element() {
-                Ok(Some(x)) => v.push(x),
-                _ => break,
-            }
+        while let Ok(Some(x)) = seq.next_element() {
+            v.push(x);
         }
 
         self.visit_bytes(&v)
