@@ -44,20 +44,18 @@ Signature is a wrapper around libsecp256k1's secp256k1_ecdsa_signature struct.
 pub struct Signature {
     /// The wrapped libsecp256k1 signature
     pub signature: secp256k1_ecdsa_signature,
-    /// The context associated with the signature
-    pub context: Context,
 }
 
 impl Signature {
     /// Construct an ECDSA signature
     pub fn new(hash: &[u8], sec_key: &Scalar) -> Result<Self, Error> {
+        let context = Context::default();
         let mut sig = Self {
             signature: secp256k1_ecdsa_signature { data: [0; 64] },
-            context: Context::default(),
         };
         if unsafe {
             secp256k1_ecdsa_sign(
-                sig.context.context,
+                context.context,
                 &mut sig.signature,
                 hash.as_ptr(),
                 sec_key.to_bytes().as_ptr(),
@@ -73,9 +71,11 @@ impl Signature {
 
     /// Verify an ECDSA signature
     pub fn verify(&self, hash: &[u8], pub_key: &PublicKey) -> bool {
+        let context = Context::default();
+
         1 == unsafe {
             secp256k1_ecdsa_verify(
-                self.context.context,
+                context.context,
                 &self.signature,
                 hash.as_ptr(),
                 &pub_key.key,
@@ -85,11 +85,12 @@ impl Signature {
 
     /// Returns the signature's deserialized underlying data
     pub fn to_bytes(&self) -> [u8; 64] {
+        let context = Context::default();
         let mut bytes = [0u8; 64];
         //Deserialize the signature's data
         unsafe {
             secp256k1_ecdsa_signature_serialize_compact(
-                self.context.context,
+                context.context,
                 bytes.as_mut_ptr(),
                 &self.signature,
             );
@@ -164,14 +165,14 @@ impl TryFrom<[u8; 64]> for Signature {
     /// Create an ECDSA signature given an array of signed data.
     /// Note it also serializes the data in compact (64 byte) format
     fn try_from(input: [u8; 64]) -> Result<Self, Self::Error> {
+        let context = Context::default();
         let mut sig = Self {
             signature: secp256k1_ecdsa_signature { data: [0u8; 64] },
-            context: Context::default(),
         };
         //Attempt to serialize the data into the signature
         let parsed = unsafe {
             secp256k1_ecdsa_signature_parse_compact(
-                sig.context.context,
+                context.context,
                 &mut sig.signature,
                 input.as_ptr(),
             )
@@ -252,7 +253,6 @@ mod tests {
 
         let sig_from_struct = Signature {
             signature: secp256k1_ecdsa_signature { data: bytes },
-            context: Context::default(),
         };
         let sig_from_slice = Signature::try_from(bytes.as_slice()).unwrap();
         let sig_from_array = Signature::try_from(bytes).unwrap();
