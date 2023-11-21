@@ -1,13 +1,17 @@
+use core::fmt::{Debug, Display, Formatter, Result as FmtResult};
+use serde::{
+    de::{self, Visitor},
+    Deserialize, Deserializer, Serialize, Serializer,
+};
 use std::array::TryFromSliceError;
 
 use crate::_rename::{
     secp256k1_ecdsa_sign, secp256k1_ecdsa_signature_parse_compact,
     secp256k1_ecdsa_signature_serialize_compact, secp256k1_ecdsa_verify,
 };
-use crate::bindings::secp256k1_ecdsa_signature;
-use crate::context::Context;
-use crate::errors::ConversionError;
-use crate::scalar::Scalar;
+use crate::{
+    bindings::secp256k1_ecdsa_signature, context::Context, errors::ConversionError, scalar::Scalar,
+};
 
 pub use crate::keys::{Error as KeyError, PublicKey};
 
@@ -21,7 +25,7 @@ pub enum Error {
     /// Error converting a scalar
     Conversion(ConversionError),
 }
-impl std::fmt::Display for Error {
+impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -90,6 +94,57 @@ impl Signature {
             );
         }
         bytes
+    }
+}
+
+impl Serialize for Signature {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_bytes(&self.to_bytes())
+    }
+}
+
+struct SignatureVisitor;
+
+impl<'de> Visitor<'de> for SignatureVisitor {
+    type Value = Signature;
+
+    fn expecting(&self, formatter: &mut Formatter) -> FmtResult {
+        formatter.write_str("an array of bytes which represents two scalars on the secp256k1 curve")
+    }
+
+    fn visit_bytes<E>(self, value: &[u8]) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        match Signature::try_from(value) {
+            Ok(s) => Ok(s),
+            Err(e) => Err(E::custom(format!("{:?}", e))),
+        }
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: de::SeqAccess<'de>,
+    {
+        let mut v = Vec::new();
+
+        while let Ok(Some(x)) = seq.next_element() {
+            v.push(x);
+        }
+
+        self.visit_bytes(&v)
+    }
+}
+
+impl<'de> Deserialize<'de> for Signature {
+    fn deserialize<D>(deserializer: D) -> Result<Signature, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_bytes(SignatureVisitor)
     }
 }
 
@@ -215,7 +270,7 @@ mod tests {
     }
 
     #[test]
-    fn signature_serde() {
+    fn manual_serde() {
         // Generate random data bytes
         let mut rng = OsRng::default();
         let mut bytes = [0u8; 64];
@@ -225,5 +280,22 @@ mod tests {
         let sig = Signature::try_from(bytes).unwrap();
         assert_ne!(sig.signature.data, bytes);
         assert_eq!(sig.to_bytes(), bytes);
+    }
+
+    #[test]
+    fn custom_serde() {
+        let mut rng = OsRng::default();
+        let mut hash = [0u8; 32];
+        rng.fill_bytes(&mut hash);
+        let private_key = Scalar::random(&mut rng);
+        let public_key = PublicKey::new(&private_key).expect("failed to create public key");
+        let sig = Signature::new(&hash, &private_key).expect("failed to create sig");
+
+        assert!(sig.verify(&hash, &public_key));
+
+        let ssig = serde_json::to_string(&sig).expect("failed to serialize");
+        let dsig: Signature = serde_json::from_str(&ssig).expect("failed to deserialize");
+
+        assert!(dsig.verify(&hash, &public_key));
     }
 }

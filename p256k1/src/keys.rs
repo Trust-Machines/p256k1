@@ -1,5 +1,9 @@
 use bs58;
 use core::fmt::{Debug, Display, Formatter, Result as FmtResult};
+use serde::{
+    de::{self, Visitor},
+    Deserialize, Deserializer, Serialize, Serializer,
+};
 use std::array::TryFromSliceError;
 
 use crate::_rename::{
@@ -100,6 +104,57 @@ impl Display for PublicKey {
     }
 }
 
+impl Serialize for PublicKey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_bytes(&self.to_bytes())
+    }
+}
+
+struct PublicKeyVisitor;
+
+impl<'de> Visitor<'de> for PublicKeyVisitor {
+    type Value = PublicKey;
+
+    fn expecting(&self, formatter: &mut Formatter) -> FmtResult {
+        formatter.write_str("an array of bytes which represents a ECDSA public key")
+    }
+
+    fn visit_bytes<E>(self, value: &[u8]) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        match PublicKey::try_from(value) {
+            Ok(s) => Ok(s),
+            Err(e) => Err(E::custom(format!("{:?}", e))),
+        }
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: de::SeqAccess<'de>,
+    {
+        let mut v = Vec::new();
+
+        while let Ok(Some(x)) = seq.next_element() {
+            v.push(x);
+        }
+
+        self.visit_bytes(&v)
+    }
+}
+
+impl<'de> Deserialize<'de> for PublicKey {
+    fn deserialize<D>(deserializer: D) -> Result<PublicKey, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_bytes(PublicKeyVisitor)
+    }
+}
+
 impl TryFrom<&str> for PublicKey {
     type Error = Error;
     /// Create a pubkey from the passed byte slice
@@ -177,6 +232,57 @@ impl Debug for XOnlyPublicKey {
 impl Display for XOnlyPublicKey {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "{}", bs58::encode(self.to_bytes()).into_string())
+    }
+}
+
+impl Serialize for XOnlyPublicKey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_bytes(&self.to_bytes())
+    }
+}
+
+struct XOnlyPublicKeyVisitor;
+
+impl<'de> Visitor<'de> for XOnlyPublicKeyVisitor {
+    type Value = XOnlyPublicKey;
+
+    fn expecting(&self, formatter: &mut Formatter) -> FmtResult {
+        formatter.write_str("an array of bytes which represents a ECDSA public key")
+    }
+
+    fn visit_bytes<E>(self, value: &[u8]) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        match XOnlyPublicKey::try_from(value) {
+            Ok(s) => Ok(s),
+            Err(e) => Err(E::custom(format!("{:?}", e))),
+        }
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: de::SeqAccess<'de>,
+    {
+        let mut v = Vec::new();
+
+        while let Ok(Some(x)) = seq.next_element() {
+            v.push(x);
+        }
+
+        self.visit_bytes(&v)
+    }
+}
+
+impl<'de> Deserialize<'de> for XOnlyPublicKey {
+    fn deserialize<D>(deserializer: D) -> Result<XOnlyPublicKey, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_bytes(XOnlyPublicKeyVisitor)
     }
 }
 
@@ -385,5 +491,23 @@ mod tests {
         assert_eq!(xopubkey3.to_bytes(), point.x().to_bytes());
         assert_eq!(pubkey.to_bytes(), pubkey2.to_bytes());
         assert_eq!(pubkey.to_bytes(), pubkey3.to_bytes());
+    }
+
+    #[test]
+    fn custom_serde() {
+        let mut rng = OsRng::default();
+        let private_key = Scalar::random(&mut rng);
+        let public_key = PublicKey::new(&private_key).expect("failed to create public key");
+        let ser = serde_json::to_string(&public_key).expect("failed to serialize");
+        let deser: PublicKey = serde_json::from_str(&ser).expect("failed to deserialize");
+
+        assert_eq!(public_key.to_bytes(), deser.to_bytes());
+
+        let xonly_public_key =
+            XOnlyPublicKey::new(&private_key).expect("failed to create XOnlyPublicKey");
+        let xoser = serde_json::to_string(&xonly_public_key).expect("failed to serialize");
+        let xodeser: XOnlyPublicKey = serde_json::from_str(&xoser).expect("failed to deserialize");
+
+        assert_eq!(xonly_public_key.to_bytes(), xodeser.to_bytes());
     }
 }

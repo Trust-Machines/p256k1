@@ -17,6 +17,12 @@ use serde::{
 };
 use std::os::raw::c_void;
 
+use crate::_rename::{
+    secp256k1_ecmult, secp256k1_ecmult_multi_var, secp256k1_fe_get_b32, secp256k1_fe_is_odd,
+    secp256k1_fe_normalize_var, secp256k1_fe_set_b32, secp256k1_ge_set_xo_var,
+    secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_gej_set_ge, secp256k1_scratch_space_create,
+    secp256k1_scratch_space_destroy,
+};
 use crate::{
     bindings::{
         secp256k1_callback, secp256k1_ecmult_multi_callback, secp256k1_fe, secp256k1_ge,
@@ -28,13 +34,6 @@ use crate::{
     group::secp256k1_ge_set_gej,
     scalar::Scalar,
     traits::MultiMult,
-};
-
-use crate::_rename::{
-    secp256k1_ecmult, secp256k1_ecmult_multi_var, secp256k1_fe_get_b32, secp256k1_fe_is_odd,
-    secp256k1_fe_normalize_var, secp256k1_fe_set_b32, secp256k1_ge_set_xo_var,
-    secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_gej_set_ge, secp256k1_scratch_space_create,
-    secp256k1_scratch_space_destroy,
 };
 
 /// The secp256k1 base point
@@ -887,7 +886,7 @@ mod tests {
     }
 
     #[test]
-    fn serde() {
+    fn custom_serde() {
         let mut rng = OsRng::default();
         let p = Point::from(Scalar::random(&mut rng));
         let s = serde_json::to_string(&p).expect("failed to serialize");

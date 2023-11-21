@@ -188,7 +188,7 @@ impl<'de> Visitor<'de> for ScalarVisitor {
     type Value = Scalar;
 
     fn expecting(&self, formatter: &mut Formatter) -> FmtResult {
-        formatter.write_str("an array of bytes which represents a point on the secp256k1 curve")
+        formatter.write_str("an array of bytes which represents a scalar for the secp256k1 curve")
     }
 
     fn visit_bytes<E>(self, value: &[u8]) -> Result<Self::Value, E>
@@ -827,7 +827,7 @@ mod tests {
     }
 
     #[test]
-    fn serde() {
+    fn custom_serde() {
         let mut rng = OsRng::default();
         let x = Scalar::random(&mut rng);
         let s = serde_json::to_string(&x).expect("failed to serialize");
