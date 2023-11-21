@@ -33,8 +33,8 @@ pub enum Error {
     /// Error converting a scalar
     Conversion(ConversionError),
 }
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "{:?}", self)
     }
 }

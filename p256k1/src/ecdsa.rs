@@ -26,7 +26,7 @@ pub enum Error {
     Conversion(ConversionError),
 }
 impl Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "{:?}", self)
     }
 }
