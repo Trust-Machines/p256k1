@@ -38,6 +38,12 @@ pub enum Error {
     Conversion(ConversionError),
 }
 
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        write!(f, "{:?}", self)
+    }
+}
+
 #[derive(Copy, Clone, Debug)]
 /**
 Element is a wrapper around libsecp256k1's internal secp256k1_fe struct.  It provides a field element, which is like a scalar but not necessarily reduced modulo the group order

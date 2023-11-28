@@ -99,6 +99,12 @@ impl Signature {
     }
 }
 
+impl Display for Signature {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        write!(f, "{}", bs58::encode(self.to_bytes()).into_string())
+    }
+}
+
 impl Serialize for Signature {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
