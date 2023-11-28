@@ -11,8 +11,18 @@ use core::{
 };
 use num_traits::Zero;
 use primitive_types::U256;
+use serde::{
+    de::{self, Visitor},
+    Deserialize, Deserializer, Serialize, Serializer,
+};
 use std::os::raw::c_void;
 
+use crate::_rename::{
+    secp256k1_ecmult, secp256k1_ecmult_multi_var, secp256k1_fe_get_b32, secp256k1_fe_is_odd,
+    secp256k1_fe_normalize_var, secp256k1_fe_set_b32, secp256k1_ge_set_xo_var,
+    secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_gej_set_ge, secp256k1_scratch_space_create,
+    secp256k1_scratch_space_destroy,
+};
 use crate::{
     bindings::{
         secp256k1_callback, secp256k1_ecmult_multi_callback, secp256k1_fe, secp256k1_ge,
@@ -24,13 +34,6 @@ use crate::{
     group::secp256k1_ge_set_gej,
     scalar::Scalar,
     traits::MultiMult,
-};
-
-use crate::_rename::{
-    secp256k1_ecmult, secp256k1_ecmult_multi_var, secp256k1_fe_get_b32, secp256k1_fe_is_odd,
-    secp256k1_fe_normalize_var, secp256k1_fe_set_b32, secp256k1_ge_set_xo_var,
-    secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_gej_set_ge, secp256k1_scratch_space_create,
-    secp256k1_scratch_space_destroy,
 };
 
 /// The secp256k1 base point
@@ -76,7 +79,13 @@ pub enum Error {
     LiftFailed,
 }
 
-#[derive(Copy, Clone, serde::Serialize, serde::Deserialize)]
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        write!(f, "{:?}", self)
+    }
+}
+
+#[derive(Copy, Clone)]
 /**
 Point is a wrapper around libsecp256k1's internal secp256k1_gej struct.  It provides a point on the secp256k1 curve in Jacobian coordinates.  This allows for extremely fast curve point operations, and avoids expensive conversions from byte buffers.
  */
@@ -336,6 +345,60 @@ impl PartialEq for Point {
 }
 
 impl Eq for Point {}
+
+impl Serialize for Point {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_bytes(self.compress().as_bytes())
+    }
+}
+
+struct PointVisitor;
+
+impl<'de> Visitor<'de> for PointVisitor {
+    type Value = Point;
+
+    fn expecting(&self, formatter: &mut Formatter) -> FmtResult {
+        formatter.write_str("an array of bytes which represents a point on the secp256k1 curve")
+    }
+
+    fn visit_bytes<E>(self, value: &[u8]) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        match Compressed::try_from(value) {
+            Ok(c) => match Point::try_from(&c) {
+                Ok(p) => Ok(p),
+                Err(e) => Err(E::custom(format!("{:?}", e))),
+            },
+            Err(e) => Err(E::custom(format!("{:?}", e))),
+        }
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: de::SeqAccess<'de>,
+    {
+        let mut v = Vec::new();
+
+        while let Ok(Some(x)) = seq.next_element() {
+            v.push(x);
+        }
+
+        self.visit_bytes(&v)
+    }
+}
+
+impl<'de> Deserialize<'de> for Point {
+    fn deserialize<D>(deserializer: D) -> Result<Point, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_bytes(PointVisitor)
+    }
+}
 
 impl Hash for Point {
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -806,7 +869,7 @@ mod tests {
     }
     #[test]
     #[allow(non_snake_case)]
-    fn test_bip_340() {
+    fn bip_340() {
         let mut rng = OsRng::default();
 
         for _ in 0..0xff {
@@ -826,5 +889,15 @@ mod tests {
                 assert_eq!(A.y(), p - B.y());
             }
         }
+    }
+
+    #[test]
+    fn custom_serde() {
+        let mut rng = OsRng::default();
+        let p = Point::from(Scalar::random(&mut rng));
+        let s = serde_json::to_string(&p).expect("failed to serialize");
+        let q = serde_json::from_str(&s).expect("failed to deserialize");
+
+        assert_eq!(p, q);
     }
 }

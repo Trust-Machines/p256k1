@@ -1,13 +1,17 @@
+use core::fmt::{Debug, Display, Formatter, Result as FmtResult};
+use serde::{
+    de::{self, Visitor},
+    Deserialize, Deserializer, Serialize, Serializer,
+};
 use std::array::TryFromSliceError;
 
 use crate::_rename::{
     secp256k1_ecdsa_sign, secp256k1_ecdsa_signature_parse_compact,
     secp256k1_ecdsa_signature_serialize_compact, secp256k1_ecdsa_verify,
 };
-use crate::bindings::secp256k1_ecdsa_signature;
-use crate::context::Context;
-use crate::errors::ConversionError;
-use crate::scalar::Scalar;
+use crate::{
+    bindings::secp256k1_ecdsa_signature, context::Context, errors::ConversionError, scalar::Scalar,
+};
 
 pub use crate::keys::{Error as KeyError, PublicKey};
 
@@ -21,8 +25,8 @@ pub enum Error {
     /// Error converting a scalar
     Conversion(ConversionError),
 }
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "{:?}", self)
     }
 }
@@ -36,23 +40,22 @@ impl From<TryFromSliceError> for Error {
 /**
 Signature is a wrapper around libsecp256k1's secp256k1_ecdsa_signature struct.
 */
+#[derive(Debug, Clone)]
 pub struct Signature {
     /// The wrapped libsecp256k1 signature
     pub signature: secp256k1_ecdsa_signature,
-    /// The context associated with the signature
-    pub context: Context,
 }
 
 impl Signature {
     /// Construct an ECDSA signature
     pub fn new(hash: &[u8], sec_key: &Scalar) -> Result<Self, Error> {
+        let context = Context::default();
         let mut sig = Self {
             signature: secp256k1_ecdsa_signature { data: [0; 64] },
-            context: Context::default(),
         };
         if unsafe {
             secp256k1_ecdsa_sign(
-                sig.context.context,
+                context.context,
                 &mut sig.signature,
                 hash.as_ptr(),
                 sec_key.to_bytes().as_ptr(),
@@ -68,9 +71,11 @@ impl Signature {
 
     /// Verify an ECDSA signature
     pub fn verify(&self, hash: &[u8], pub_key: &PublicKey) -> bool {
+        let context = Context::default();
+
         1 == unsafe {
             secp256k1_ecdsa_verify(
-                self.context.context,
+                context.context,
                 &self.signature,
                 hash.as_ptr(),
                 &pub_key.key,
@@ -80,16 +85,74 @@ impl Signature {
 
     /// Returns the signature's deserialized underlying data
     pub fn to_bytes(&self) -> [u8; 64] {
+        let context = Context::default();
         let mut bytes = [0u8; 64];
         //Deserialize the signature's data
         unsafe {
             secp256k1_ecdsa_signature_serialize_compact(
-                self.context.context,
+                context.context,
                 bytes.as_mut_ptr(),
                 &self.signature,
             );
         }
         bytes
+    }
+}
+
+impl Display for Signature {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        write!(f, "{}", bs58::encode(self.to_bytes()).into_string())
+    }
+}
+
+impl Serialize for Signature {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_bytes(&self.to_bytes())
+    }
+}
+
+struct SignatureVisitor;
+
+impl<'de> Visitor<'de> for SignatureVisitor {
+    type Value = Signature;
+
+    fn expecting(&self, formatter: &mut Formatter) -> FmtResult {
+        formatter.write_str("an array of bytes which represents two scalars on the secp256k1 curve")
+    }
+
+    fn visit_bytes<E>(self, value: &[u8]) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        match Signature::try_from(value) {
+            Ok(s) => Ok(s),
+            Err(e) => Err(E::custom(format!("{:?}", e))),
+        }
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: de::SeqAccess<'de>,
+    {
+        let mut v = Vec::new();
+
+        while let Ok(Some(x)) = seq.next_element() {
+            v.push(x);
+        }
+
+        self.visit_bytes(&v)
+    }
+}
+
+impl<'de> Deserialize<'de> for Signature {
+    fn deserialize<D>(deserializer: D) -> Result<Signature, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_bytes(SignatureVisitor)
     }
 }
 
@@ -108,14 +171,14 @@ impl TryFrom<[u8; 64]> for Signature {
     /// Create an ECDSA signature given an array of signed data.
     /// Note it also serializes the data in compact (64 byte) format
     fn try_from(input: [u8; 64]) -> Result<Self, Self::Error> {
+        let context = Context::default();
         let mut sig = Self {
             signature: secp256k1_ecdsa_signature { data: [0u8; 64] },
-            context: Context::default(),
         };
         //Attempt to serialize the data into the signature
         let parsed = unsafe {
             secp256k1_ecdsa_signature_parse_compact(
-                sig.context.context,
+                context.context,
                 &mut sig.signature,
                 input.as_ptr(),
             )
@@ -196,7 +259,6 @@ mod tests {
 
         let sig_from_struct = Signature {
             signature: secp256k1_ecdsa_signature { data: bytes },
-            context: Context::default(),
         };
         let sig_from_slice = Signature::try_from(bytes.as_slice()).unwrap();
         let sig_from_array = Signature::try_from(bytes).unwrap();
@@ -215,7 +277,7 @@ mod tests {
     }
 
     #[test]
-    fn signature_serde() {
+    fn manual_serde() {
         // Generate random data bytes
         let mut rng = OsRng::default();
         let mut bytes = [0u8; 64];
@@ -225,5 +287,22 @@ mod tests {
         let sig = Signature::try_from(bytes).unwrap();
         assert_ne!(sig.signature.data, bytes);
         assert_eq!(sig.to_bytes(), bytes);
+    }
+
+    #[test]
+    fn custom_serde() {
+        let mut rng = OsRng::default();
+        let mut hash = [0u8; 32];
+        rng.fill_bytes(&mut hash);
+        let private_key = Scalar::random(&mut rng);
+        let public_key = PublicKey::new(&private_key).expect("failed to create public key");
+        let sig = Signature::new(&hash, &private_key).expect("failed to create sig");
+
+        assert!(sig.verify(&hash, &public_key));
+
+        let ssig = serde_json::to_string(&sig).expect("failed to serialize");
+        let dsig: Signature = serde_json::from_str(&ssig).expect("failed to deserialize");
+
+        assert!(dsig.verify(&hash, &public_key));
     }
 }
