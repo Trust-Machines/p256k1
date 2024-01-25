@@ -1,14 +1,8 @@
-use bs58::{decode::Error as DecodeError, encode::Error as EncodeError};
 use core::{
     cmp::PartialEq,
     fmt::{Debug, Display, Formatter, Result as FmtResult},
 };
 use serde::{Deserialize, Serialize};
-
-/// Re-export of crate `bs58`'s decode error
-pub type Base58DecodeError = DecodeError;
-/// Re-export of crate `bs58`'s encode error
-pub type Base58EncodeError = EncodeError;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 /// Base58-related errors
