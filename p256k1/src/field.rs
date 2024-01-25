@@ -278,8 +278,8 @@ impl TryFrom<&str> for Element {
     fn try_from(s: &str) -> Result<Self, Error> {
         match bs58::decode(s).into_vec() {
             Ok(bytes) => Element::try_from(&bytes[..]),
-            Err(e) => Err(Error::Conversion(ConversionError::Base58(
-                Base58Error::Decode(e),
+            Err(_e) => Err(Error::Conversion(ConversionError::Base58(
+                Base58Error::Decode, //(e),
             ))),
         }
     }

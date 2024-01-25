@@ -161,8 +161,8 @@ impl TryFrom<&str> for PublicKey {
     fn try_from(s: &str) -> Result<Self, self::Error> {
         match bs58::decode(s).into_vec() {
             Ok(bytes) => PublicKey::try_from(&bytes[..]),
-            Err(e) => Err(Error::Conversion(ConversionError::Base58(
-                Base58Error::Decode(e),
+            Err(_e) => Err(Error::Conversion(ConversionError::Base58(
+                Base58Error::Decode, //(e),
             ))),
         }
     }
@@ -292,8 +292,8 @@ impl TryFrom<&str> for XOnlyPublicKey {
     fn try_from(s: &str) -> Result<Self, self::Error> {
         match bs58::decode(s).into_vec() {
             Ok(bytes) => XOnlyPublicKey::try_from(&bytes[..]),
-            Err(e) => Err(Error::Conversion(ConversionError::Base58(
-                Base58Error::Decode(e),
+            Err(_e) => Err(Error::Conversion(ConversionError::Base58(
+                Base58Error::Decode, //(e),
             ))),
         }
     }
