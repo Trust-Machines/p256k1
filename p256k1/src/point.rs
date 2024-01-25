@@ -482,9 +482,7 @@ impl TryFrom<&Compressed> for Point {
             let ry = secp256k1_ge_set_xo_var(
                 &mut y,
                 &x,
-                (c.data[0] as u32 == SECP256K1_TAG_PUBKEY_ODD)
-                    .try_into()
-                    .unwrap(),
+                (c.data[0] as u32 == SECP256K1_TAG_PUBKEY_ODD).into(),
             );
             if ry == 0 {
                 return Err(Error::Conversion(ConversionError::BadGroupElement));
