@@ -68,7 +68,7 @@ pub const N: [u8; 32] = [
     0xBA, 0xAE, 0xDC, 0xE6, 0xAF, 0x48, 0xA0, 0x3B, 0xBF, 0xD2, 0x5E, 0x8C, 0xD0, 0x36, 0x41, 0x41,
 ];
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 /// Errors in point operations
 pub enum Error {
     /// Error doing multi-exponentiation
@@ -711,8 +711,8 @@ impl TryFrom<&str> for Compressed {
     fn try_from(s: &str) -> Result<Self, Error> {
         match bs58::decode(s).into_vec() {
             Ok(bytes) => Compressed::try_from(&bytes[..]),
-            Err(e) => Err(Error::Conversion(ConversionError::Base58(
-                Base58Error::Decode(e),
+            Err(_e) => Err(Error::Conversion(ConversionError::Base58(
+                Base58Error::Decode, //(e),
             ))),
         }
     }
