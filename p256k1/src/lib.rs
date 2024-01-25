@@ -17,6 +17,7 @@ mod bindings {
 #[cfg(not(feature = "with_bindgen"))]
 mod bindings;
 
+#[allow(unused_imports)]
 mod _rename;
 
 /// secp256k1 context operations

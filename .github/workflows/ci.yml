@@ -88,7 +88,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: -- -D warnings -A clippy::op-ref -A clippy::needless-range-loop -A clippy::suspicious-arithmetic-impl -A clippy::suspicious-op-assign-impl -A unused_imports
+          args: -- -D warnings -A clippy::op-ref -A clippy::needless-range-loop -A clippy::suspicious-arithmetic-impl -A clippy::suspicious-op-assign-impl
 
   package:
     runs-on: ubuntu-latest
