@@ -13,6 +13,7 @@ use serde::{
     de::{self, Visitor},
     Deserialize, Deserializer, Serialize, Serializer,
 };
+use std::cmp::Ordering;
 
 use crate::_rename::{
     secp256k1_fe_add, secp256k1_fe_cmp_var, secp256k1_fe_get_b32, secp256k1_fe_inv,
@@ -43,6 +44,8 @@ impl Display for Error {
         write!(f, "{:?}", self)
     }
 }
+
+impl std::error::Error for Error {}
 
 #[derive(Copy, Clone, Debug)]
 /**
@@ -169,6 +172,23 @@ impl PartialEq for Element {
 }
 
 impl Eq for Element {}
+
+impl PartialOrd for Element {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Element {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match unsafe { secp256k1_fe_cmp_var(&self.fe, &other.fe) } {
+            -1 => Ordering::Less,
+            0 => Ordering::Equal,
+            1 => Ordering::Greater,
+            _ => panic!("secp256k1_fe_cmp_var returned unexpected result"), // Unreachable
+        }
+    }
+}
 
 impl Serialize for Element {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -655,6 +675,24 @@ mod tests {
             let klhs = (0..k).fold(Element::one(), |s, _| s * x);
             assert_eq!(klhs, x ^ ke);
         }
+    }
+
+    #[test]
+    fn cmp() {
+        let left = Element::from(1);
+        let right = Element::from(2);
+
+        assert!(left < right);
+        assert!(right > left);
+    }
+
+    #[test]
+    fn sort() {
+        let sorted = [1, 2, 3, 4, 5].map(Element::from);
+        let mut unsorted = [4, 2, 3, 1, 5].map(Element::from);
+        unsorted.sort();
+
+        assert_eq!(unsorted, sorted);
     }
 
     #[test]

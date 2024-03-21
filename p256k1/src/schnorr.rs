@@ -3,7 +3,7 @@ use serde::{
     de::{self, Visitor},
     Deserialize, Deserializer, Serialize, Serializer,
 };
-use std::array::TryFromSliceError;
+use std::{array::TryFromSliceError, hash::Hash};
 
 use crate::_rename::{secp256k1_schnorrsig_sign32, secp256k1_schnorrsig_verify};
 use crate::{
@@ -25,11 +25,14 @@ pub enum Error {
     /// Error converting a scalar
     Conversion(ConversionError),
 }
+
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "{:?}", self)
     }
 }
+
+impl std::error::Error for Error {}
 
 impl From<TryFromSliceError> for Error {
     fn from(e: TryFromSliceError) -> Self {
@@ -103,6 +106,32 @@ impl Display for Signature {
     }
 }
 
+impl PartialEq for Signature {
+    fn eq(&self, other: &Self) -> bool {
+        self.to_bytes().eq(&other.to_bytes())
+    }
+}
+
+impl Eq for Signature {}
+
+impl PartialOrd for Signature {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Signature {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.to_bytes().cmp(&other.to_bytes())
+    }
+}
+
+impl Hash for Signature {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        state.write(&self.to_bytes())
+    }
+}
+
 impl Serialize for Signature {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -172,6 +201,8 @@ impl From<[u8; 64]> for Signature {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use super::*;
     use rand_core::{OsRng, RngCore};
     use sha2::{Digest, Sha256};
@@ -232,5 +263,28 @@ mod tests {
         let dsig: Signature = serde_json::from_str(&ssig).expect("failed to deserialize");
 
         assert!(dsig.verify(&hash, &public_key));
+    }
+
+    #[test]
+    fn hash() {
+        let msg = [0u8; 32];
+        let private_keys = [1, 2, 3, 4, 5].map(Scalar::from);
+        let signatures = private_keys.map(|pk| Signature::new(&msg, &pk).unwrap());
+
+        let signatures_hash_set: HashSet<_> = signatures.into();
+
+        assert_eq!(signatures_hash_set.len(), 5);
+    }
+
+    #[test]
+    fn sort() {
+        let msg = [0u8; 32];
+        let private_keys = [1, 2, 3, 4, 5].map(Scalar::from);
+        let mut signatures = private_keys.map(|pk| Signature::new(&msg, &pk).unwrap());
+        signatures.sort();
+
+        for idx in 0..4 {
+            assert!(signatures[idx] < signatures[idx + 1]);
+        }
     }
 }

@@ -31,3 +31,12 @@ pub enum ConversionError {
     /// Error converting a base58-related value
     Base58(Base58Error),
 }
+
+impl Display for ConversionError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl std::error::Error for Base58Error {}
+impl std::error::Error for ConversionError {}
