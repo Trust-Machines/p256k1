@@ -4,7 +4,7 @@ use serde::{
     de::{self, Visitor},
     Deserialize, Deserializer, Serialize, Serializer,
 };
-use std::array::TryFromSliceError;
+use std::{array::TryFromSliceError, hash::Hash};
 
 use crate::_rename::{
     secp256k1_ec_pubkey_create, secp256k1_ec_pubkey_parse, secp256k1_ec_pubkey_serialize,
@@ -33,11 +33,14 @@ pub enum Error {
     /// Error converting a scalar
     Conversion(ConversionError),
 }
+
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "{:?}", self)
     }
 }
+
+impl std::error::Error for Error {}
 
 impl From<TryFromSliceError> for Error {
     fn from(e: TryFromSliceError) -> Self {
@@ -104,6 +107,32 @@ impl Display for PublicKey {
     }
 }
 
+impl PartialEq for PublicKey {
+    fn eq(&self, other: &Self) -> bool {
+        self.to_bytes().eq(&other.to_bytes())
+    }
+}
+
+impl Eq for PublicKey {}
+
+impl PartialOrd for PublicKey {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for PublicKey {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.to_bytes().cmp(&other.to_bytes())
+    }
+}
+
+impl Hash for PublicKey {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        state.write(&self.to_bytes())
+    }
+}
+
 impl Serialize for PublicKey {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -152,6 +181,14 @@ impl<'de> Deserialize<'de> for PublicKey {
         D: Deserializer<'de>,
     {
         deserializer.deserialize_bytes(PublicKeyVisitor)
+    }
+}
+
+impl TryFrom<&Scalar> for PublicKey {
+    type Error = Error;
+
+    fn try_from(value: &Scalar) -> Result<Self, Self::Error> {
+        Self::new(value)
     }
 }
 
@@ -235,6 +272,32 @@ impl Display for XOnlyPublicKey {
     }
 }
 
+impl PartialEq for XOnlyPublicKey {
+    fn eq(&self, other: &Self) -> bool {
+        self.to_bytes().eq(&other.to_bytes())
+    }
+}
+
+impl Eq for XOnlyPublicKey {}
+
+impl PartialOrd for XOnlyPublicKey {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for XOnlyPublicKey {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.to_bytes().cmp(&other.to_bytes())
+    }
+}
+
+impl Hash for XOnlyPublicKey {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        state.write(&self.to_bytes())
+    }
+}
+
 impl Serialize for XOnlyPublicKey {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -283,6 +346,14 @@ impl<'de> Deserialize<'de> for XOnlyPublicKey {
         D: Deserializer<'de>,
     {
         deserializer.deserialize_bytes(XOnlyPublicKeyVisitor)
+    }
+}
+
+impl TryFrom<&Scalar> for XOnlyPublicKey {
+    type Error = Error;
+
+    fn try_from(value: &Scalar) -> Result<Self, Self::Error> {
+        Self::new(value)
     }
 }
 
@@ -366,11 +437,52 @@ impl KeyPair {
     }
 }
 
+impl TryFrom<&Scalar> for KeyPair {
+    type Error = Error;
+
+    fn try_from(value: &Scalar) -> Result<Self, Self::Error> {
+        Self::new(value)
+    }
+}
+
 impl Debug for KeyPair {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         f.debug_struct("KeyPair")
             .field("data", &bs58::encode(self.key.data).into_string())
             .finish()
+    }
+}
+
+impl PartialEq for KeyPair {
+    fn eq(&self, other: &Self) -> bool {
+        let p1: PublicKey = self.into();
+        let p2: PublicKey = other.into();
+
+        p1 == p2
+    }
+}
+
+impl Eq for KeyPair {}
+
+impl PartialOrd for KeyPair {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for KeyPair {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        let p1: PublicKey = self.into();
+        let p2: PublicKey = other.into();
+
+        p1.cmp(&p2)
+    }
+}
+
+impl Hash for KeyPair {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        let p1: PublicKey = self.into();
+        p1.hash(state);
     }
 }
 
@@ -419,6 +531,8 @@ impl From<&KeyPair> for XOnlyPublicKey {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use super::*;
     use crate::point::Point;
     use rand_core::OsRng;
@@ -432,12 +546,12 @@ mod tests {
 
         //Serialize with try_from and deseriailze with to_bytes
         let pubkey2 = PublicKey::try_from(pubkey.to_bytes().as_slice()).unwrap();
-        assert_eq!(pubkey2.to_bytes(), pubkey.to_bytes());
+        assert_eq!(pubkey2, pubkey);
 
         //Serialize again with str
         let pubkey3 = PublicKey::try_from(format!("{}", &pubkey).as_str()).unwrap();
-        assert_eq!(pubkey3.to_bytes(), pubkey.to_bytes());
-        assert_eq!(pubkey3.to_bytes(), pubkey2.to_bytes());
+        assert_eq!(pubkey3, pubkey);
+        assert_eq!(pubkey3, pubkey2);
     }
 
     #[test]
@@ -449,12 +563,12 @@ mod tests {
 
         //Serialize with try_from and deseriailze with to_bytes
         let xopubkey2 = XOnlyPublicKey::try_from(xopubkey.to_bytes().as_slice()).unwrap();
-        assert_eq!(xopubkey2.to_bytes(), xopubkey.to_bytes());
+        assert_eq!(xopubkey2, xopubkey);
 
         //Serialize again with str
         let xopubkey3 = XOnlyPublicKey::try_from(format!("{}", &xopubkey).as_str()).unwrap();
-        assert_eq!(xopubkey3.to_bytes(), xopubkey.to_bytes());
-        assert_eq!(xopubkey3.to_bytes(), xopubkey2.to_bytes());
+        assert_eq!(xopubkey3, xopubkey);
+        assert_eq!(xopubkey3, xopubkey2);
     }
 
     #[test]
@@ -485,12 +599,12 @@ mod tests {
         let pubkey2 = PublicKey::new(&scalar).unwrap();
         let pubkey3 = PublicKey::new(&seckey).unwrap();
 
-        assert_eq!(scalar.to_bytes(), seckey.to_bytes());
+        assert_eq!(scalar, seckey);
         assert_eq!(xopubkey.to_bytes(), point.x().to_bytes());
         assert_eq!(xopubkey2.to_bytes(), point.x().to_bytes());
         assert_eq!(xopubkey3.to_bytes(), point.x().to_bytes());
-        assert_eq!(pubkey.to_bytes(), pubkey2.to_bytes());
-        assert_eq!(pubkey.to_bytes(), pubkey3.to_bytes());
+        assert_eq!(pubkey, pubkey2);
+        assert_eq!(pubkey, pubkey3);
     }
 
     #[test]
@@ -501,13 +615,70 @@ mod tests {
         let ser = serde_json::to_string(&public_key).expect("failed to serialize");
         let deser: PublicKey = serde_json::from_str(&ser).expect("failed to deserialize");
 
-        assert_eq!(public_key.to_bytes(), deser.to_bytes());
+        assert_eq!(public_key, deser);
 
         let xonly_public_key =
             XOnlyPublicKey::new(&private_key).expect("failed to create XOnlyPublicKey");
         let xoser = serde_json::to_string(&xonly_public_key).expect("failed to serialize");
         let xodeser: XOnlyPublicKey = serde_json::from_str(&xoser).expect("failed to deserialize");
 
-        assert_eq!(xonly_public_key.to_bytes(), xodeser.to_bytes());
+        assert_eq!(xonly_public_key, xodeser);
+    }
+
+    #[test]
+    fn pubkey_hash() {
+        hash_test::<PublicKey>();
+    }
+
+    #[test]
+    fn pubkey_sort() {
+        sort_test::<PublicKey>();
+    }
+
+    #[test]
+    fn xonlykey_hash() {
+        hash_test::<XOnlyPublicKey>();
+    }
+
+    #[test]
+    fn xonlykey_sort() {
+        sort_test::<XOnlyPublicKey>();
+    }
+
+    #[test]
+    fn keypair_hash() {
+        hash_test::<KeyPair>();
+    }
+
+    #[test]
+    fn keypair_sort() {
+        sort_test::<KeyPair>();
+    }
+
+    fn hash_test<K>()
+    where
+        K: for<'a> TryFrom<&'a Scalar> + Hash + Eq,
+        for<'a> <K as TryFrom<&'a Scalar>>::Error: Debug,
+    {
+        let private_keys = [1, 2, 3, 4, 5].map(Scalar::from);
+        let public_keys = private_keys.map(|pk| K::try_from(&pk).unwrap());
+
+        let public_keys_hash_set: HashSet<_> = public_keys.into();
+
+        assert_eq!(public_keys_hash_set.len(), 5);
+    }
+
+    fn sort_test<K>()
+    where
+        K: for<'a> TryFrom<&'a Scalar> + Hash + Ord,
+        for<'a> <K as TryFrom<&'a Scalar>>::Error: Debug,
+    {
+        let private_keys = [1, 2, 3, 4, 5].map(Scalar::from);
+        let mut public_keys = private_keys.map(|pk| K::try_from(&pk).unwrap());
+        public_keys.sort();
+
+        for idx in 0..4 {
+            assert!(public_keys[idx] < public_keys[idx + 1]);
+        }
     }
 }
