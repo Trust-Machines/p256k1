@@ -16,40 +16,37 @@ fn hash_to_scalar(hasher: &mut Sha256) -> Scalar {
 
 #[allow(non_snake_case)]
 struct SchnorrProof {
-    X: Point,
-    r: Scalar,
-    V: Point,
+    R: Point,
+    s: Scalar,
 }
 
 impl SchnorrProof {
     #[allow(non_snake_case)]
     pub fn new<T: RngCore + CryptoRng>(x: &Scalar, rng: &mut T) -> Self {
         let X = Point::from(x);
-        let v = Scalar::random(rng);
-        let V = Point::from(&v);
+        let r = Scalar::random(rng);
+        let R = Point::from(&r);
+        let c = Self::challenge(&X, &R);
+        let s = r - &c * x;
+
+        SchnorrProof { R, s }
+    }
+
+    #[allow(non_snake_case)]
+    pub fn verify(&self, X: Point) -> bool {
+        let c = Self::challenge(&X, &self.R);
+        self.R == &self.s * &G + &c * &X
+    }
+
+    #[allow(non_snake_case)]
+    pub fn challenge(X: &Point, R: &Point) -> Scalar {
         let mut hasher = Sha256::new();
 
         hasher.update(G.compress().as_bytes());
         hasher.update(X.compress().as_bytes());
-        hasher.update(V.compress().as_bytes());
+        hasher.update(R.compress().as_bytes());
 
-        let c = hash_to_scalar(&mut hasher);
-        let r = v - &c * x;
-
-        SchnorrProof { X, r, V }
-    }
-
-    #[allow(non_snake_case)]
-    pub fn verify(&self) -> bool {
-        let mut hasher = Sha256::new();
-
-        hasher.update(G.compress().as_bytes());
-        hasher.update(self.X.compress().as_bytes());
-        hasher.update(self.V.compress().as_bytes());
-
-        let c = hash_to_scalar(&mut hasher);
-
-        self.V == &self.r * &G + &c * &self.X
+        hash_to_scalar(&mut hasher)
     }
 }
 
@@ -58,5 +55,5 @@ fn main() {
     let mut rng = OsRng;
     let x = Scalar::random(&mut rng);
     let proof = SchnorrProof::new(&x, &mut rng);
-    println!("SchnorrProof verify {}", proof.verify());
+    println!("SchnorrProof verify {}", proof.verify(x * G));
 }

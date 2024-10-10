@@ -9,13 +9,12 @@
 #[allow(deref_nullptr)]
 #[allow(improper_ctypes)]
 #[allow(clippy::all)]
+#[cfg(not(feature = "with_bindgen"))]
+mod bindings;
 #[cfg(feature = "with_bindgen")]
 mod bindings {
     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 }
-
-#[cfg(not(feature = "with_bindgen"))]
-mod bindings;
 
 #[allow(unused_imports)]
 mod _rename;

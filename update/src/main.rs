@@ -6,7 +6,7 @@ use syn::{ForeignItem, Ident, Item};
 fn main() {
     const USER: &str = "bitcoin-core";
     const REPO_NAME: &str = "secp256k1";
-    const COMMIT_SHA: &str = "2bca0a5cbf756dd4ff1f0bda4585a7d3c64e1480";
+    const COMMIT_SHA: &str = "642c885b6102725e25623738529895a95addc4f4";
 
     let url = &format!("https://github.com/{USER}/{REPO_NAME}/archive/{COMMIT_SHA}.zip");
 
@@ -70,12 +70,26 @@ fn main() {
                             "secp256k1_fe_is_odd",
                             "secp256k1_fe_mul",
                             "secp256k1_fe_negate",
+                            "secp256k1_fe_impl_negate_unchecked",
+                            "secp256k1_fe_impl_normalize",
+                            "secp256k1_fe_impl_normalize_var",
                             "secp256k1_fe_normalize",
                             "secp256k1_fe_normalize_var",
                             "secp256k1_fe_sqr",
                             "secp256k1_ecmult",
                             "secp256k1_scalar_add",
                             "secp256k1_fe_set_b32",
+                            "secp256k1_fe_set_b32_mod",
+                            "secp256k1_fe_impl_set_b32_mod",
+                            "secp256k1_fe_inv",
+                            "secp256k1_fe_impl_add",
+                            "secp256k1_fe_impl_mul",
+                            "secp256k1_fe_impl_sqr",
+                            "secp256k1_fe_impl_inv",
+                            "secp256k1_fe_impl_cmp_var",
+                            "secp256k1_fe_impl_get_b32",
+                            "secp256k1_fe_impl_is_odd",
+                            "secp256k1_fe_impl_set_int",
                             "secp256k1_fe_set_int",
                             "secp256k1_scalar_eq",
                             "secp256k1_scalar_get_b32",
