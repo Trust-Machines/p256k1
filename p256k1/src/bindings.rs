@@ -8396,7 +8396,7 @@ extern "C" {
     pub fn s642c885b6102725e25623738529895a95addc4f4_secp256k1_fe_impl_set_b32_limit(
         r: *mut secp256k1_fe,
         a: *const ::std::os::raw::c_uchar,
-    );
+    ) -> ::std::os::raw::c_int;
 }
 extern "C" {
     pub fn s642c885b6102725e25623738529895a95addc4f4_secp256k1_fe_impl_get_b32(

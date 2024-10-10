@@ -476,12 +476,10 @@ impl TryFrom<&Compressed> for Point {
 
             let mut x = secp256k1_fe { n: [0; 5] };
 
-	    // XXX this is not ideal, since we should only load without rollover
-	    secp256k1_fe_set_b32(&mut x, &c.data[1]);
-            /*let rx = secp256k1_fe_set_b32(&mut x, &c.data[1]);
+            let rx = secp256k1_fe_set_b32(&mut x, &c.data[1]);
             if rx == 0 {
                 return Err(Error::Conversion(ConversionError::BadFieldElement));
-            }*/
+            }
 
             let ry = secp256k1_ge_set_xo_var(
                 &mut y,
