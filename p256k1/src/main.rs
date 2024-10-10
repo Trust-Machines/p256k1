@@ -26,7 +26,7 @@ impl SchnorrProof {
         let X = Point::from(x);
         let r = Scalar::random(rng);
         let R = Point::from(&r);
-	let c = Self::challenge(&X, &R);
+        let c = Self::challenge(&X, &R);
         let s = r - &c * x;
 
         SchnorrProof { R, s }
@@ -34,7 +34,7 @@ impl SchnorrProof {
 
     #[allow(non_snake_case)]
     pub fn verify(&self, X: Point) -> bool {
-	let c = Self::challenge(&X, &self.R);
+        let c = Self::challenge(&X, &self.R);
         self.R == &self.s * &G + &c * &X
     }
 
@@ -55,5 +55,5 @@ fn main() {
     let mut rng = OsRng;
     let x = Scalar::random(&mut rng);
     let proof = SchnorrProof::new(&x, &mut rng);
-    println!("SchnorrProof verify {}", proof.verify(x*G));
+    println!("SchnorrProof verify {}", proof.verify(x * G));
 }
