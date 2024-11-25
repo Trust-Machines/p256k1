@@ -5,12 +5,12 @@ use core::{
     ffi::CStr,
     fmt::{Debug, Display, Formatter, Result as FmtResult},
     hash::{Hash, Hasher},
+    iter::Sum,
     mem,
     ops::{Add, AddAssign, Mul, Neg, Sub},
     slice,
 };
 use num_traits::Zero;
-use primitive_types::U256;
 use serde::{
     de::{self, Visitor},
     Deserialize, Deserializer, Serialize, Serializer,
@@ -292,13 +292,10 @@ impl Point {
     /// return the point P for which x(P) = x and has_even_y(P), or fails if x is greater than p-1 or no such point exists
     pub fn lift_x(x: &field::Element) -> Result<Point, Error> {
         let fp = field::Element::from(field::P);
-        let p = U256::from_big_endian(&field::P);
-        let p14 = (p + 1) / 4;
-        let mut p14_bytes = [0u8; 32];
+        let f4 = field::Element::from(4);
+        let f1 = field::Element::from(1);
+        let fp14 = (fp + f1) * f4.invert();
 
-        p14.to_big_endian(&mut p14_bytes);
-
-        let fp14 = field::Element::from(p14_bytes);
         let c = x * x * x + field::Element::from(7);
         let y = c ^ fp14;
 
@@ -653,6 +650,18 @@ impl Sub<&Point> for &Point {
     }
 }
 
+impl Sum<Point> for Point {
+    fn sum<I: Iterator<Item = Point>>(iter: I) -> Self {
+        iter.fold(Point::zero(), |acc, i| acc + i)
+    }
+}
+
+impl<'a> Sum<&'a Point> for Point {
+    fn sum<I: Iterator<Item = &'a Point>>(iter: I) -> Self {
+        iter.fold(Point::new(), |acc, i| acc + i)
+    }
+}
+
 impl Zero for Point {
     fn zero() -> Self {
         Point::identity()
@@ -773,6 +782,20 @@ mod tests {
     }
 
     #[test]
+    fn neg() {
+        let mut rng = OsRng::default();
+        let n = Scalar::from(crate::point::N);
+
+        for _ in 0..0xff {
+            let x = Scalar::random(&mut rng);
+            let y = n - x;
+            let z = -x;
+
+            assert_eq!(y, z);
+        }
+    }
+
+    #[test]
     fn mul() {
         let mut rng = OsRng::default();
 
@@ -798,6 +821,27 @@ mod tests {
 
             assert_eq!(p, Point::from(x + y));
         }
+    }
+
+    #[test]
+    fn sum() {
+        let mut rng = OsRng::default();
+        let v = (0..0xff)
+            .map(|_| Point::from(Scalar::random(&mut rng)))
+            .collect::<Vec<Point>>();
+
+        let mut loop_sum = Point::new();
+        for i in &v {
+            loop_sum += i;
+        }
+
+        let fold_sum = v.iter().fold(Point::new(), |acc, i| acc + i);
+
+        let sum_sum = v.iter().sum();
+
+        assert_eq!(loop_sum, fold_sum);
+        assert_eq!(loop_sum, sum_sum);
+        assert_eq!(sum_sum, fold_sum);
     }
 
     #[test]

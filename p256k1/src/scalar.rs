@@ -5,6 +5,7 @@ use core::{
     convert::{From, TryFrom},
     fmt::{Debug, Display, Formatter, Result as FmtResult},
     hash::{Hash, Hasher},
+    iter::Sum,
     ops::{Add, AddAssign, BitXor, Div, DivAssign, Mul, MulAssign, Neg, Sub},
 };
 use num_traits::{One, Zero};
@@ -583,6 +584,18 @@ impl Sub<&Scalar> for &Scalar {
     }
 }
 
+impl Sum<Scalar> for Scalar {
+    fn sum<I: Iterator<Item = Scalar>>(iter: I) -> Self {
+        iter.fold(Scalar::zero(), |acc, i| acc + i)
+    }
+}
+
+impl<'a> Sum<&'a Scalar> for Scalar {
+    fn sum<I: Iterator<Item = &'a Scalar>>(iter: I) -> Self {
+        iter.fold(Scalar::zero(), |acc, i| acc + i)
+    }
+}
+
 impl Zero for Scalar {
     fn zero() -> Self {
         Scalar::from(0)
@@ -770,6 +783,27 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn sum() {
+        let mut rng = OsRng::default();
+        let v = (0..0xff)
+            .map(|_| Scalar::random(&mut rng))
+            .collect::<Vec<Scalar>>();
+
+        let mut loop_sum = Scalar::zero();
+        for i in &v {
+            loop_sum += i;
+        }
+
+        let fold_sum = v.iter().fold(Scalar::zero(), |acc, i| acc + i);
+
+        let sum_sum = v.iter().sum();
+
+        assert_eq!(loop_sum, fold_sum);
+        assert_eq!(loop_sum, sum_sum);
+        assert_eq!(sum_sum, fold_sum);
     }
 
     #[test]
