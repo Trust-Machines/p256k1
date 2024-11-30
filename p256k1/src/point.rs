@@ -255,6 +255,7 @@ impl Point {
 
         unsafe {
             secp256k1_ge_set_gej(&mut ge, &self.gej);
+            secp256k1_fe_normalize_var(&mut ge.y);
             secp256k1_fe_is_odd(&ge.y) == 0
         }
     }
