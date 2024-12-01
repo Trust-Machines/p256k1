@@ -255,6 +255,7 @@ impl Point {
 
         unsafe {
             secp256k1_ge_set_gej(&mut ge, &self.gej);
+            secp256k1_fe_normalize_var(&mut ge.y);
             secp256k1_fe_is_odd(&ge.y) == 0
         }
     }
@@ -943,5 +944,17 @@ mod tests {
         let q = serde_json::from_str(&s).expect("failed to deserialize");
 
         assert_eq!(p, q);
+    }
+
+    #[test]
+    fn point_parity_check() {
+        let number = [
+            143, 155, 8, 85, 229, 228, 1, 179, 39, 101, 245, 99, 113, 81, 250, 4, 15, 22, 126, 74,
+            137, 110, 198, 25, 250, 142, 202, 51, 0, 241, 238, 168,
+        ];
+        let scalar = Scalar::from(number);
+
+        let point = Point::from(scalar);
+        assert_eq!(point.has_even_y(), point.compress().data[0] == 2);
     }
 }
