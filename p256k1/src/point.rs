@@ -945,7 +945,7 @@ mod tests {
 
         assert_eq!(p, q);
     }
-    There might be a bug in the has_even_y function in p256k1 . Here is a test case:
+
     #[test]
     fn point_parity_check() {
         let number = [
