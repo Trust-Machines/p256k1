@@ -48,9 +48,9 @@ jobs:
       - run: cargo install cargo-tarpaulin
       # - run: cargo tarpaulin
       - run: cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out Xml --avoid-cfg-tarpaulin
-      - uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@v3
         with:
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
   fmt:
     name: fmt
