@@ -1,7 +1,7 @@
 use bitvec::prelude::*;
 use bs58;
 use core::{
-    cmp::{Eq, PartialEq},
+    cmp::{Eq, PartialEq, PartialOrd},
     convert::{From, TryFrom},
     fmt::{Debug, Display, Formatter, Result as FmtResult},
     hash::{Hash, Hasher},
