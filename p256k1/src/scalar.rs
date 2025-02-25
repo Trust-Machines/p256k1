@@ -46,7 +46,7 @@ Scalar is a wrapper around libsecp256k1's internal secp256k1_scalar struct.  It 
  */
 pub struct Scalar {
     /// The wrapped libsecp256k1 scalar
-    pub scalar: secp256k1_scalar,
+    pub(crate) scalar: secp256k1_scalar,
 }
 
 impl Scalar {

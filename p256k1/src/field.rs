@@ -53,7 +53,7 @@ Element is a wrapper around libsecp256k1's internal secp256k1_fe struct.  It pro
  */
 pub struct Element {
     /// The wrapped libsecp256k1 fe
-    pub fe: secp256k1_fe,
+    pub(crate) fe: secp256k1_fe,
 }
 
 impl Element {

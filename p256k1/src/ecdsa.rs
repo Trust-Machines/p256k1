@@ -46,7 +46,7 @@ Signature is a wrapper around libsecp256k1's secp256k1_ecdsa_signature struct.
 #[derive(Debug, Clone)]
 pub struct Signature {
     /// The wrapped libsecp256k1 signature
-    pub signature: secp256k1_ecdsa_signature,
+    pub(crate) signature: secp256k1_ecdsa_signature,
 }
 
 impl Signature {

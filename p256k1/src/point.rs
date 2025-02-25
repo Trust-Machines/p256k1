@@ -93,7 +93,7 @@ Point is a wrapper around libsecp256k1's internal secp256k1_gej struct.  It prov
  */
 pub struct Point {
     /// The wrapped libsecp256k1 point
-    pub gej: secp256k1_gej,
+    pub(crate) gej: secp256k1_gej,
 }
 
 #[no_mangle]

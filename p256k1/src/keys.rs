@@ -54,7 +54,7 @@ PublicKey is a wrapper around libsecp256k1's secp256k1_pubkey struct.
 #[derive(Clone, Copy)]
 pub struct PublicKey {
     /// The wrapped secp256k1_pubkey public key
-    pub key: secp256k1_pubkey,
+    pub(crate) key: secp256k1_pubkey,
 }
 
 impl PublicKey {
@@ -233,7 +233,7 @@ XOnlyPublicKey is a wrapper around libsecp256k1's secp256k1_xonly_pubkey struct.
 #[derive(Clone, Copy)]
 pub struct XOnlyPublicKey {
     /// The wrapped secp256k1_xonly_pubkey public key
-    pub key: secp256k1_xonly_pubkey,
+    pub(crate) key: secp256k1_xonly_pubkey,
     /// The parity bit of this key
     pub parity: i32,
 }
@@ -417,7 +417,7 @@ KeyPair is a wrapper around libsecp256k1's secp256k1_keypair struct.
 #[derive(Clone, Copy)]
 pub struct KeyPair {
     /// The wrapped secp256k1_keypair
-    pub key: secp256k1_keypair,
+    pub(crate) key: secp256k1_keypair,
 }
 
 impl KeyPair {
