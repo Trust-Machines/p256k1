@@ -19,9 +19,9 @@ use std::os::raw::c_void;
 
 use crate::_rename::{
     secp256k1_ecmult, secp256k1_ecmult_multi_var, secp256k1_fe_get_b32, secp256k1_fe_is_odd,
-    secp256k1_fe_normalize_var, secp256k1_fe_set_b32, secp256k1_ge_set_xo_var,
-    secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_gej_set_ge, secp256k1_scratch_space_create,
-    secp256k1_scratch_space_destroy,
+    secp256k1_fe_normalize_var, secp256k1_fe_set_b32, secp256k1_ge_is_valid_var,
+    secp256k1_ge_set_xo_var, secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_gej_set_ge,
+    secp256k1_scratch_space_create, secp256k1_scratch_space_destroy,
 };
 use crate::{
     bindings::{
@@ -305,11 +305,25 @@ impl Point {
             return Err(Error::LiftFailed);
         }
 
-        let point = Point::from((*x, y));
+        let point = Point::try_from((*x, y))?;
         if point.has_even_y() {
             Ok(point)
         } else {
-            Ok(Point::from((*x, fp - y)))
+            Ok(Point::try_from((*x, fp - y))?)
+        }
+    }
+
+    /// check that this point is on the secp256k1 curve
+    pub fn is_valid(&self) -> bool {
+        let mut ge = secp256k1_ge {
+            x: secp256k1_fe { n: [0; 5] },
+            y: secp256k1_fe { n: [0; 5] },
+            infinity: 0,
+        };
+
+        unsafe {
+            secp256k1_ge_set_gej(&mut ge, &self.gej);
+            secp256k1_ge_is_valid_var(&ge) == 1
         }
     }
 }
@@ -407,17 +421,21 @@ impl Hash for Point {
     }
 }
 
-impl From<(Scalar, Scalar)> for Point {
-    fn from(ss: (Scalar, Scalar)) -> Self {
-        let x = field::Element::from(ss.0);
-        let y = field::Element::from(ss.0);
+impl TryFrom<(Scalar, Scalar)> for Point {
+    type Error = Error;
 
-        Self::from((x, y))
+    fn try_from(ss: (Scalar, Scalar)) -> Result<Self, Self::Error> {
+        let x = field::Element::from(ss.0);
+        let y = field::Element::from(ss.1);
+
+        Self::try_from((x, y))
     }
 }
 
-impl From<(field::Element, field::Element)> for Point {
-    fn from(ff: (field::Element, field::Element)) -> Self {
+impl TryFrom<(field::Element, field::Element)> for Point {
+    type Error = Error;
+
+    fn try_from(ff: (field::Element, field::Element)) -> Result<Self, Self::Error> {
         unsafe {
             let ge = secp256k1_ge {
                 x: ff.0.fe,
@@ -429,7 +447,11 @@ impl From<(field::Element, field::Element)> for Point {
 
             secp256k1_gej_set_ge(&mut r.gej, &ge);
 
-            r
+            if r.is_valid() {
+                Ok(r)
+            } else {
+                Err(Error::Conversion(ConversionError::BadGroupElement))
+            }
         }
     }
 }
