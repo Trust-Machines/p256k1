@@ -274,7 +274,7 @@ static int secp256k1_gej_is_infinity(const secp256k1_gej *a) {
     return a->infinity;
 }
 
-static int secp256k1_ge_is_valid_var(const secp256k1_ge *a) {
+int secp256k1_ge_is_valid_var(const secp256k1_ge *a) {
     secp256k1_fe y2, x3;
     if (a->infinity) {
         return 0;

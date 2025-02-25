@@ -19,9 +19,9 @@ use std::os::raw::c_void;
 
 use crate::_rename::{
     secp256k1_ecmult, secp256k1_ecmult_multi_var, secp256k1_fe_get_b32, secp256k1_fe_is_odd,
-    secp256k1_fe_normalize_var, secp256k1_fe_set_b32, secp256k1_ge_set_xo_var,
-    secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_gej_set_ge, secp256k1_scratch_space_create,
-    secp256k1_scratch_space_destroy,
+    secp256k1_fe_normalize_var, secp256k1_fe_set_b32, secp256k1_ge_is_valid_var,
+    secp256k1_ge_set_xo_var, secp256k1_gej_add_var, secp256k1_gej_neg, secp256k1_gej_set_ge,
+    secp256k1_scratch_space_create, secp256k1_scratch_space_destroy,
 };
 use crate::{
     bindings::{
@@ -311,6 +311,20 @@ impl Point {
             Ok(Point::from((*x, fp - y)))
         }
     }
+
+    /// check that this point is on the secp256k1 curve
+    pub fn is_valid(&self) -> bool {
+        let mut ge = secp256k1_ge {
+            x: secp256k1_fe { n: [0; 5] },
+            y: secp256k1_fe { n: [0; 5] },
+            infinity: 0,
+        };
+
+        unsafe {
+            secp256k1_ge_set_gej(&mut ge, &self.gej);
+            return secp256k1_ge_is_valid_var(&ge) == 1;
+        }
+    }
 }
 
 impl Default for Point {
@@ -409,7 +423,7 @@ impl Hash for Point {
 impl From<(Scalar, Scalar)> for Point {
     fn from(ss: (Scalar, Scalar)) -> Self {
         let x = field::Element::from(ss.0);
-        let y = field::Element::from(ss.0);
+        let y = field::Element::from(ss.1);
 
         Self::from((x, y))
     }
