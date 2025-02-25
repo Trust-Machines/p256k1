@@ -322,7 +322,7 @@ impl Point {
 
         unsafe {
             secp256k1_ge_set_gej(&mut ge, &self.gej);
-            return secp256k1_ge_is_valid_var(&ge) == 1;
+            secp256k1_ge_is_valid_var(&ge) == 1
         }
     }
 }
