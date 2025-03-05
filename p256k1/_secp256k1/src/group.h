@@ -55,7 +55,7 @@ int secp256k1_ge_set_xo_var(secp256k1_ge *r, const secp256k1_fe *x, int odd);
 static int secp256k1_ge_is_infinity(const secp256k1_ge *a);
 
 /** Check whether a group element is valid (i.e., on the curve). */
-static int secp256k1_ge_is_valid_var(const secp256k1_ge *a);
+int secp256k1_ge_is_valid_var(const secp256k1_ge *a);
 
 /** Set r equal to the inverse of a (i.e., mirrored around the X axis) */
 static void secp256k1_ge_neg(secp256k1_ge *r, const secp256k1_ge *a);

@@ -86,6 +86,7 @@ fn main() {
                             "secp256k1_scalar_set_int",
                             "secp256k1_ecmult_multi_var",
                             "secp256k1_ge_set_xo_var",
+                            "secp256k1_ge_is_valid_var",
                             "secp256k1_gej_add_var",
                             "secp256k1_gej_neg",
                             "secp256k1_gej_set_ge",
