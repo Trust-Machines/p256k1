@@ -32,6 +32,7 @@ use crate::{
     errors::{Base58Error, ConversionError},
     field,
     group::secp256k1_ge_set_gej,
+    keys::PublicKey,
     scalar::Scalar,
     traits::MultiMult,
 };
@@ -497,6 +498,21 @@ impl TryFrom<&Compressed> for Point {
     }
 }
 
+impl From<&PublicKey> for Point {
+    fn from(key: &PublicKey) -> Self {
+        let compressed = Compressed::from(key.to_bytes());
+        // the unwrap should not fail because secp256k1_pubkey holds a parsed and valid public key,
+        // and PublicKey::key is marked pub(crate) so it can't be altered outside of this library
+        Self::try_from(&compressed).unwrap()
+    }
+}
+
+impl From<PublicKey> for Point {
+    fn from(key: PublicKey) -> Self {
+        Self::from(&key)
+    }
+}
+
 impl Add for Point {
     type Output = Self;
 
@@ -956,5 +972,16 @@ mod tests {
 
         let point = Point::from(scalar);
         assert_eq!(point.has_even_y(), point.compress().data[0] == 2);
+    }
+
+    #[test]
+    fn from_public_key() {
+        let mut rng = OsRng;
+        let x = Scalar::random(&mut rng);
+        let p = Point::from(x);
+        let key = PublicKey::new(&x).unwrap();
+        let q = Point::from(key);
+
+        assert_eq!(p, q);
     }
 }
