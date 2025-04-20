@@ -1022,6 +1022,12 @@ mod tests {
 
         assert_eq!(p, q);
 
+        let y = -p.y();
+
+        let q = Point::try_from((x, y)).unwrap();
+
+        assert_eq!(-p, q);
+
         let z = y + field::Element::from(1);
         let q = Point::try_from((x, z));
 
